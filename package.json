@@ -35,7 +35,6 @@
   "scripts": {
     "example": "bun run --filter @swmansion/react-native-bottom-sheet-example",
     "clean": "del-cli lib",
-    "prepare": "lefthook install && bob build",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\""
   },
