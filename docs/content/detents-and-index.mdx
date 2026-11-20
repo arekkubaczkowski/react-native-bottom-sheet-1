@@ -128,8 +128,10 @@ whatever is behind the sheet.
 
 Use `cornerRadius` on a detent to set all four corners at that height. Detents
 that omit it use the individual radii from `surfaceStyle`. An explicit `0`
-makes the corners square. The surface, content clip, and card shadows follow
-the same outline.
+makes the corners square. A positive override rounds the bottom corners even
+when they are flush with the screen. The surface, content clip, and card shadows
+follow the same outline. Opting in keeps the content clipped to the card even at
+a square detent.
 
 By default, the radius blends linearly over the full distance between open
 detents. Set `cornerRadiusTransitionDistance` on the upper detent to blend
@@ -137,7 +139,9 @@ only as the sheet reaches that detent or moves away from it. The distance uses
 layout units (points on iOS, dp on Android, and CSS pixels on the web) and is
 capped at the distance between those detents. Closed detents ignore corner
 options. The sheet retains the first open detent's corners as it slides
-between that detent and closed.
+between that detent and closed. When detents resolve to the same position, they
+share the first explicit radius and its transition distance. If none has an
+override, they share the surface radii and use the first detent's distance.
 
 ```tsx
 <BottomSheet

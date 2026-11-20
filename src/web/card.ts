@@ -139,12 +139,12 @@ export class SheetCard {
     if (this.hasDetentCornerRadii && detents.length > 0) {
       const upper = detents.findIndex((detent) => position < detent.position);
       const lower = upper < 0 ? detents.length - 1 : Math.max(upper - 1, 0);
-      lowerRadius = config.detents[lower]?.cornerRadius ?? -1;
+      lowerRadius = this.cornerStyleAt(lower)?.cornerRadius ?? -1;
       if (upper > lower) {
         const span = detents[upper]!.position - detents[lower]!.position;
-        const distance =
-          config.detents[upper]?.cornerRadiusTransitionDistance || span;
-        upperRadius = config.detents[upper]?.cornerRadius ?? -1;
+        const target = this.cornerStyleAt(upper);
+        const distance = target?.cornerRadiusTransitionDistance || span;
+        upperRadius = target?.cornerRadius ?? -1;
         progress = clamp(
           1 - (detents[upper]!.position - position) / Math.min(distance, span),
           0,
@@ -170,6 +170,18 @@ export class SheetCard {
       elements.shadow.style.borderRadius = this.cardCorners;
     }
     return changed;
+  }
+
+  private cornerStyleAt(index: number) {
+    const { detents, config } = this.host;
+    const position = detents[index]!.position;
+    let first = index;
+    while (first > 0 && detents[first - 1]!.position === position) first--;
+    for (let member = first; detents[member]?.position === position; member++) {
+      const style = config?.detents[member];
+      if ((style?.cornerRadius ?? -1) >= 0) return style;
+    }
+    return config?.detents[first];
   }
 
   private currentPosition() {
@@ -219,6 +231,7 @@ export class SheetCard {
   /** Whether the card is cut out of the surface: rounded, or keeping gaps. */
   private clipsToCard() {
     return (
+      this.hasDetentCornerRadii ||
       this.appliedCornerRadii.some((radius) => radius > 0) ||
       this.isNarrowedByMaxWidth() ||
       this.host.rawDetents.some(

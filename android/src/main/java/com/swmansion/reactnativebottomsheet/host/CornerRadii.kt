@@ -19,8 +19,8 @@ internal fun resolveCornerRadii(
   }
   val upper = detents.indexOfFirst { position < it.position }
   val lower = if (upper < 0) detents.lastIndex else (upper - 1).coerceAtLeast(0)
-  val from = cornerStyles.getOrNull(lower)?.radius
-  val target = cornerStyles.getOrNull(upper)
+  val from = cornerStyleAt(lower, detents, cornerStyles)?.radius
+  val target = cornerStyleAt(upper, detents, cornerStyles)
   val to = target?.radius
   val progress =
     if (upper > lower) {
@@ -35,4 +35,31 @@ internal fun resolveCornerRadii(
     val end = to ?: surface[i]
     result[i] = start + (end - start) * progress
   }
+}
+
+private fun cornerStyleAt(
+  index: Int,
+  detents: List<DetentSpec>,
+  styles: List<DetentCornerRadius>,
+): DetentCornerRadius? {
+  val position = detents.getOrNull(index)?.position ?: return null
+  var first = index
+  while (first > 0 && detents[first - 1].position == position) first--
+  var member = first
+  while (member < detents.size && detents[member].position == position) {
+    val style = styles.getOrNull(member)
+    if (style?.radius != null) return style
+    member++
+  }
+  return styles.getOrNull(first)
+}
+
+/** CSS tapered outset keeps a changing shadow radius continuous at zero. */
+internal fun spreadCornerRadius(radius: Float, spread: Float, tapered: Boolean): Float {
+  if (radius <= 0f) return 0f
+  if (tapered && radius < spread) {
+    val ratio = radius / spread
+    return radius * (4f - 3f * ratio + ratio * ratio)
+  }
+  return (radius + spread).coerceAtLeast(0f)
 }

@@ -66,7 +66,7 @@ describe('detent corner radius', () => {
 
   test('preserves a zero override and ignores the option while closed', () => {
     const detents = normalize([
-      { value: 0, cornerRadius: 12 },
+      { value: 0, cornerRadius: -1, cornerRadiusTransitionDistance: -1 },
       '50%',
       { value: '100%', cornerRadius: 0, cornerRadiusTransitionDistance: 50 },
     ]);
@@ -89,9 +89,11 @@ describe('detent corner radius', () => {
     expect(() =>
       normalize([{ value: 300, cornerRadiusTransitionDistance: Infinity }])
     ).toThrow('cornerRadiusTransitionDistance');
-    expect(() =>
-      normalize([{ value: 300, cornerRadiusTransitionDistance: 0 }])
-    ).toThrow('cornerRadiusTransitionDistance');
+    for (const distance of [-1, 0, NaN]) {
+      expect(() =>
+        normalize([{ value: 300, cornerRadiusTransitionDistance: distance }])
+      ).toThrow('cornerRadiusTransitionDistance');
+    }
   });
 });
 

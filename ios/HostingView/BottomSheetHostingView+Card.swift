@@ -57,11 +57,6 @@ enum ContinuousCorner {
   }
 }
 
-struct DetentCornerRadius: Equatable {
-  let radius: CGFloat?
-  let distance: CGFloat
-}
-
 // MARK: - Card geometry
 
 extension BottomSheetHostingView {
@@ -70,7 +65,7 @@ extension BottomSheetHostingView {
     radii += Array(repeating: 0, count: 4 - radii.count)
     guard radii != cornerRadii else { return }
     cornerRadii = radii
-    updateCardShape()
+    updateCardShape(refreshSettle: detentCornerRadii != nil)
   }
 
   public func setSurfaceShadows(_ values: [NSDictionary]) {
@@ -94,7 +89,7 @@ extension BottomSheetHostingView {
     let curve: CALayerCornerCurve = value == "continuous" ? .continuous : .circular
     guard curve != cornerCurve else { return }
     cornerCurve = curve
-    updateCardShape()
+    updateCardShape(refreshSettle: detentCornerRadii != nil)
   }
 
   public var currentContentOffsetY: CGFloat {
@@ -167,23 +162,13 @@ extension BottomSheetHostingView {
   }
 
   func cardCornerRadii(forPosition position: CGFloat) -> [CGFloat] {
-    guard let styles = detentCornerRadii, !detentSpecs.isEmpty else { return cornerRadii }
-    let anchored = max(position, firstOpenDetentPosition)
-    let upper = detentSpecs.firstIndex { anchored < $0.position }
-    let lower = upper.map { max(0, $0 - 1) } ?? (detentSpecs.count - 1)
-    let from = styles.indices.contains(lower) ? styles[lower].radius : nil
-    guard let upper, upper > lower else {
-      return from.map { Array(repeating: $0, count: 4) } ?? cornerRadii
-    }
-    let target = styles.indices.contains(upper) ? styles[upper] : nil
-    let span = detentSpecs[upper].position - detentSpecs[lower].position
-    let distance = target?.distance ?? 0
-    let window = distance > 0 ? min(span, distance) : span
-    let progress = min(1, max(0, 1 - (detentSpecs[upper].position - anchored) / window))
-    return cornerRadii.map { baseline in
-      let start = from ?? baseline
-      return start + ((target?.radius ?? baseline) - start) * progress
-    }
+    guard let styles = detentCornerRadii else { return cornerRadii }
+    return resolveDetentCornerRadii(
+      position: max(position, firstOpenDetentPosition),
+      detents: detentSpecs,
+      styles: styles,
+      surface: cornerRadii
+    )
   }
 
   /// The card's outline in `rect`. A positive `outset` grows the outline and
@@ -195,7 +180,9 @@ extension BottomSheetHostingView {
     let rect = cardRect.insetBy(dx: -outset, dy: -outset)
     // A negative spread can leave no shape, which then casts no shadow.
     guard !rect.isNull else { return CGMutablePath() }
-    let grown = radii.map { $0 > 0 ? max(0, $0 + outset) : 0 }
+    let grown = radii.map {
+      spreadCornerRadius($0, by: outset, tapered: detentCornerRadii != nil)
+    }
     // Corner transforms map the top-right corner's local frame (origin at the
     // corner, x leftward-negative along the top edge, y down the right edge)
     // onto each corner, clockwise from the top right.
@@ -265,8 +252,8 @@ extension BottomSheetHostingView {
     CATransaction.setDisableActions(true)
     clipContainer.layer.position = rect.origin
     clipContainer.layer.bounds = rect
-    if animatesUniformCornerRadius {
-      clipContainer.layer.cornerRadius = radii[0]
+    if let animatedCornerIndex {
+      clipContainer.layer.cornerRadius = radii[animatedCornerIndex]
     }
     cardMask?.path = cardPath(in: rect, radii: radii)
     for (layer, shadow) in zip(shadowLayers, cardShadows) {
@@ -342,37 +329,32 @@ extension BottomSheetHostingView {
   /// Chooses how the card is clipped. Corners sharing one radius use the
   /// layer's own corner rounding (which honors `cornerCurve`); differing radii
   /// fall back to a mask drawn from `cardPath`, in the same curve.
-  func updateCardShape() {
+  func updateCardShape(refreshSettle: Bool = false) {
+    let corners: [CACornerMask] = [
+      .layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMaxYCorner,
+    ]
     let rounded = cornerRadii.filter { $0 > 0 }
+    let roundedMask = zip(cornerRadii, corners).reduce(into: CACornerMask()) { mask, corner in
+      if corner.0 > 0 {
+        mask.insert(corner.1)
+      }
+    }
     clipContainer.clipsToBounds = isCardShaped
-    animatesUniformCornerRadius = detentCornerRadii != nil &&
-      cornerRadii.dropFirst().allSatisfy { $0 == cornerRadii[0] }
-    if animatesUniformCornerRadius {
-      clipContainer.layer.maskedCorners = [
-        .layerMinXMinYCorner, .layerMaxXMinYCorner, .layerMaxXMaxYCorner, .layerMinXMaxYCorner,
-      ]
-      clipContainer.layer.cornerCurve = cornerCurve
-      clipContainer.layer.mask = nil
-      cardMask = nil
-    } else if detentCornerRadii == nil,
-              let radius = rounded.first,
-              rounded.allSatisfy({ abs($0 - radius) < 0.01 })
+    animatedCornerIndex = detentCornerRadii.flatMap {
+      detentCornerLayerIndex(surface: cornerRadii, styles: $0)
+    }
+    let staticRadius = rounded.first.flatMap { radius in
+      rounded.allSatisfy { abs($0 - radius) < 0.01 } ? radius : nil
+    }
+    if let radius = animatedCornerIndex.map({ cornerRadii[$0] }) ??
+      (detentCornerRadii == nil ? staticRadius : nil)
     {
-      var corners: CACornerMask = []
-      if cornerRadii[0] > 0 {
-        corners.insert(.layerMinXMinYCorner)
-      }
-      if cornerRadii[1] > 0 {
-        corners.insert(.layerMaxXMinYCorner)
-      }
-      if cornerRadii[2] > 0 {
-        corners.insert(.layerMaxXMaxYCorner)
-      }
-      if cornerRadii[3] > 0 {
-        corners.insert(.layerMinXMaxYCorner)
-      }
+      let usesAllCorners = animatedCornerIndex != nil &&
+        cornerRadii.allSatisfy { $0 == radius }
       clipContainer.layer.cornerRadius = radius
-      clipContainer.layer.maskedCorners = corners
+      clipContainer.layer.maskedCorners = usesAllCorners
+        ? CACornerMask(corners)
+        : roundedMask
       clipContainer.layer.cornerCurve = cornerCurve
       clipContainer.layer.mask = nil
       cardMask = nil
@@ -387,16 +369,18 @@ extension BottomSheetHostingView {
       clipContainer.layer.mask = nil
       cardMask = nil
     }
-    // A shape change mid-settle cannot retarget the running card animations;
-    // they finish against the old shape, and the model geometry set here takes
-    // over once they end.
     applyCardGeometry(forPosition: sheetContainerHeight - sheetContainer.transform.ty)
+    if refreshSettle, let cardSettleAnimation {
+      clipContainer.layer.removeAnimation(forKey: Self.cardCornerRadiusAnimationKey)
+      addCardAnimations(matching: cardSettleAnimation)
+    }
   }
 
   /// Animates the card along the same spring samples, timing and clock as the
   /// sheet's settle animation, so the card's height follows the sheet frame
   /// for frame on the render server.
   func addCardAnimations(matching sheetAnimation: CAKeyframeAnimation) {
+    cardSettleAnimation = sheetAnimation
     // An unclipped card without shadows draws nothing that follows its
     // geometry; the model geometry is enough.
     guard isCardShaped || !cardShadows.isEmpty else { return }
@@ -419,11 +403,10 @@ extension BottomSheetHostingView {
       keyframes("position", rects.map { NSValue(cgPoint: $0.origin) }),
       forKey: Self.cardPositionAnimationKey
     )
-    cardSettleAnimation = sheetAnimation
     addContentAnimation()
-    if animatesUniformCornerRadius {
+    if let animatedCornerIndex {
       clipContainer.layer.add(
-        keyframes("cornerRadius", radii.map { $0[0] }),
+        keyframes("cornerRadius", radii.map { $0[animatedCornerIndex] }),
         forKey: Self.cardCornerRadiusAnimationKey
       )
     }
@@ -468,7 +451,7 @@ extension BottomSheetHostingView {
   }
 
   var isContentAnimationStale: Bool {
-    guard cardSettleAnimation != nil else { return false }
+    guard hasCardGaps, cardSettleAnimation != nil else { return false }
     return contentAnimationLayouts != currentContentLayouts
   }
 

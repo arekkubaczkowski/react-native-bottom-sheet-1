@@ -1,9 +1,22 @@
 /// <reference lib="dom" />
 /// <reference types="bun" />
 
-import { beforeAll, describe, expect, test } from 'bun:test';
-import { SheetCard, type CardHost } from '../web/card';
+import { beforeAll, describe, expect, mock, test } from 'bun:test';
+import type { CardHost } from '../web/card';
 import type { BottomSheetWebElements, RawDetent } from '../web/types';
+
+mock.module('react-native', () => ({
+  I18nManager: { isRTL: false, doLeftAndRightSwapInRTL: true },
+  Platform: { OS: 'web' },
+  processColor: (color: unknown) => color,
+  StyleSheet: { flatten: (style: unknown) => style },
+}));
+
+let SheetCard: typeof import('../web/card').SheetCard;
+
+beforeAll(async () => {
+  ({ SheetCard } = await import('../web/card'));
+});
 
 const rawDetent = (
   value: number,
@@ -91,8 +104,23 @@ describe('web card corners', () => {
     const midway = card.renderAt(775);
     expect(midway.radius).toBe('16px 12px 8px 4px');
     expect(midway.clip).toContain('round 16px 12px 8px 4px');
-    expect(card.renderAt(800).radius).toBe('0px 0px 0px 0px');
+    const square = card.renderAt(800);
+    expect(square.radius).toBe('0px 0px 0px 0px');
+    expect(square.clip).toContain('round 0px 0px 0px 0px');
     expect(card.renderAt(775)).toEqual(midway);
+  });
+
+  test('uses the first explicit style throughout a coincident detent group', () => {
+    for (const coincident of [
+      [rawDetent(800, 0, 50), rawDetent(800)],
+      [rawDetent(800), rawDetent(800, 0, 50)],
+      [rawDetent(800, 0, 50), rawDetent(800, 12)],
+    ]) {
+      const card = createCard([rawDetent(0), rawDetent(400), ...coincident]);
+      expect(card.renderAt(775).radius).toBe('16px 12px 8px 4px');
+      expect(card.renderAt(800).radius).toBe('0px 0px 0px 0px');
+      expect(card.renderAt(825).radius).toBe('0px 0px 0px 0px');
+    }
   });
 
   test('caps a transition distance at the interval and retains the first open shape while closing', () => {

@@ -41,8 +41,13 @@ internal class Card(
   fun setDetentCornerRadii(values: List<DetentCornerRadius>?) {
     if (detentCornerRadii == values) return
     detentCornerRadii = values
+    updateClipping()
     cornerRadiiDirty = true
     updateCardGeometry()
+  }
+
+  fun updateClipping() {
+    clipContainer.setClipsToCard(state.hasCardGaps || detentCornerRadii != null)
   }
 
   private fun updateCornerRadii(position: Float) {
@@ -57,7 +62,7 @@ internal class Card(
         interpolatedRadii
       }
     clipContainer.setCornerRadii(radii)
-    for (shadowView in shadowViews) shadowView.setCornerRadii(radii)
+    for (shadowView in shadowViews) shadowView.setCornerRadii(radii, taperedSpread = styles != null)
   }
 
   /** Outset card shadows, with lengths in dp. */

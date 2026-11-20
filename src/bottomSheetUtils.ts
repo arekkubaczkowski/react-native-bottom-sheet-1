@@ -526,8 +526,10 @@ const normalizeDetent = (
   const { kind, value } = parseDetentValue(config.value, index);
   const isClosed = isNormalizedDetentClosed({ kind, value });
   const insets = resolveDetentInsets(config.insets, index, isRTL);
-  const radius = config.cornerRadius ?? undefined;
-  const distance = config.cornerRadiusTransitionDistance ?? undefined;
+  const radius = isClosed ? undefined : (config.cornerRadius ?? undefined);
+  const distance = isClosed
+    ? undefined
+    : (config.cornerRadiusTransitionDistance ?? undefined);
   if (radius !== undefined && !isFiniteNonNegative(radius)) {
     throw invalidDetentOptionError(
       'cornerRadius',
@@ -567,8 +569,8 @@ const normalizeDetent = (
     widestCard: false,
     ...cardLayout,
     scrimOpacity,
-    cornerRadius: isClosed ? -1 : (radius ?? -1),
-    cornerRadiusTransitionDistance: isClosed ? 0 : (distance ?? 0),
+    cornerRadius: radius ?? -1,
+    cornerRadiusTransitionDistance: distance ?? 0,
   };
 };
 

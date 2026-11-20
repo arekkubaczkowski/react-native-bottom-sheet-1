@@ -83,7 +83,7 @@ public final class BottomSheetHostingView: UIView {
   /// (e.g., a surface's own shadow) stays visible.
   var cornerRadii: [CGFloat] = [0, 0, 0, 0]
   var detentCornerRadii: [DetentCornerRadius]?
-  var animatesUniformCornerRadius = false
+  var animatedCornerIndex: Int?
   var cornerCurve: CALayerCornerCurve = .circular
 
   /// Outset shadows cast by the card, each one drawn by its own layer below
@@ -516,10 +516,10 @@ public final class BottomSheetHostingView: UIView {
     let newCornerRadii = cornerStyles.contains { $0.radius != nil } ? cornerStyles : nil
     let cornerRadiiChanged = newCornerRadii != detentCornerRadii
     detentCornerRadii = newCornerRadii
-    if cornerRadiiChanged {
-      updateCardShape()
-    }
     refreshDetentsFromLayout()
+    if cornerRadiiChanged {
+      updateCardShape(refreshSettle: true)
+    }
     // Set once the detents are re-resolved, so the scrim isn’t repainted
     // against the previous ones.
     scrimOpacities = entries.map { CGFloat(truncating: $0["scrimOpacity"] as? NSNumber ?? 1) }

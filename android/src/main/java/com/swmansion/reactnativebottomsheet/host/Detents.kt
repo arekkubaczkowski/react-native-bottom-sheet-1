@@ -39,7 +39,7 @@ internal class Detents(
     val hostWidth = state.width.toFloat()
     val isNarrowedByMaxWidth = state.columnWidth(hostWidth) < hostWidth
     state.hasCardGaps = state.hasInsetGaps || isNarrowedByMaxWidth
-    clipContainer.setClipsToCard(state.hasCardGaps)
+    card.updateClipping()
   }
 
   fun setDetents(raw: List<Map<String, Any>>) {

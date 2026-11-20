@@ -1,6 +1,7 @@
 package com.swmansion.reactnativebottomsheet.host
 
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 class CornerRadiiTest {
@@ -23,6 +24,36 @@ class CornerRadiiTest {
   fun `all four radii reach zero at the upper detent`() {
     assertArrayEquals(floatArrayOf(16f, 12f, 8f, 4f), radii(775f, 400f, 50f), 0f)
     assertArrayEquals(FloatArray(4), radii(800f, 400f, 50f), 0f)
+  }
+
+  @Test
+  fun `coincident detents keep the first explicit corner shape on both sides`() {
+    val detents = listOf(400f, 800f, 800f).map { DetentSpec(it, false, DetentInsets()) }
+    val inherited = DetentCornerRadius(null, 0f)
+    val square = DetentCornerRadius(0f, 50f)
+    for (styles in
+      listOf(
+        listOf(inherited, square, inherited),
+        listOf(inherited, inherited, square),
+        listOf(inherited, square, DetentCornerRadius(12f, 0f)),
+      )) {
+      val result = FloatArray(4)
+      resolveCornerRadii(775f, detents, styles, surface, result)
+      assertArrayEquals(floatArrayOf(16f, 12f, 8f, 4f), result, 0f)
+      resolveCornerRadii(800f, detents, styles, surface, result)
+      assertArrayEquals(FloatArray(4), result, 0f)
+      resolveCornerRadii(825f, detents, styles, surface, result)
+      assertArrayEquals(FloatArray(4), result, 0f)
+    }
+  }
+
+  @Test
+  fun `outset shadows taper while the corners approach zero`() {
+    assertEquals(0f, spreadCornerRadius(0f, 20f, tapered = true), 0f)
+    assertEquals(0.039985f, spreadCornerRadius(0.01f, 20f, tapered = true), 0.0001f)
+    assertEquals(27.5f, spreadCornerRadius(10f, 20f, tapered = true), 0f)
+    assertEquals(30f, spreadCornerRadius(10f, 20f, tapered = false), 0f)
+    assertEquals(0f, spreadCornerRadius(10f, -20f, tapered = true), 0f)
   }
 
   @Test
