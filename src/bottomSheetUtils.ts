@@ -345,6 +345,17 @@ export type DetentConfig = Readonly<{
    * card. Ignored at a closed detent.
    */
   insets?: DetentInsets;
+  /**
+   * Overrides all four surface corner radii at this detent. Omit to inherit
+   * the individual radii from `surfaceStyle`. Ignored at a closed detent.
+   */
+  cornerRadius?: number;
+  /**
+   * A positive distance, in layout units below this detent, over which its
+   * corners blend from the previous open detent. Omit to blend over the whole
+   * interval. New radii follow the same curve as the sheet surface.
+   */
+  cornerRadiusTransitionDistance?: number;
 }>;
 
 /** A modal sheet’s detent with its options. */
@@ -380,6 +391,10 @@ type NormalizedDetent = Readonly<{
   /** The sheet's `placement` as a physical bias. The same on every detent. */
   placementBias: number;
   scrimOpacity: number;
+  /** -1 inherits the surface radii; 0 is an explicit square corner. */
+  cornerRadius: number;
+  /** 0 blends over the entire interval. */
+  cornerRadiusTransitionDistance: number;
 }>;
 
 /** The sheet-wide horizontal layout, carried on every native detent. */
@@ -511,6 +526,27 @@ const normalizeDetent = (
   const { kind, value } = parseDetentValue(config.value, index);
   const isClosed = isNormalizedDetentClosed({ kind, value });
   const insets = resolveDetentInsets(config.insets, index, isRTL);
+  const radius = config.cornerRadius ?? undefined;
+  const distance = config.cornerRadiusTransitionDistance ?? undefined;
+  if (radius !== undefined && !isFiniteNonNegative(radius)) {
+    throw invalidDetentOptionError(
+      'cornerRadius',
+      radius,
+      index,
+      'a finite, non-negative number'
+    );
+  }
+  if (
+    distance !== undefined &&
+    (!isFiniteNonNegative(distance) || distance === 0)
+  ) {
+    throw invalidDetentOptionError(
+      'cornerRadiusTransitionDistance',
+      distance,
+      index,
+      'a finite, positive number'
+    );
+  }
   // Only a modal sheet has a scrim, so an inline sheet ignores the option
   // rather than validating it.
   const scrimOpacity =
@@ -531,6 +567,8 @@ const normalizeDetent = (
     widestCard: false,
     ...cardLayout,
     scrimOpacity,
+    cornerRadius: isClosed ? -1 : (radius ?? -1),
+    cornerRadiusTransitionDistance: isClosed ? 0 : (distance ?? 0),
   };
 };
 
