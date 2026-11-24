@@ -92,16 +92,7 @@ extension BottomSheetHostingView {
   }
 
   @objc func displayLinkFired(_ link: CADisplayLink) {
-    // `targetTimestamp` is the predicted display time of the next frame.
-    // Ideal synchronization with animations running on the render server
-    // hasn't been achieved. Render server is a black box and it's hard to
-    // find out why exactly. This approach however gives better results
-    // than lagging one frame behind.
-    let frameDuration = link.targetTimestamp - link.timestamp
-    stepSpring(
-      targetTime: link.targetTimestamp + Self.followerPredictionBiasFrames * frameDuration,
-      nextFrameTime: link.targetTimestamp
-    )
+    stepSpring(targetTime: link.targetTimestamp)
   }
 
   func snapToIndex(
@@ -216,15 +207,11 @@ extension BottomSheetHostingView {
     )
   }
 
-  private func stepSpring(targetTime: CFTimeInterval, nextFrameTime: CFTimeInterval) {
+  private func stepSpring(targetTime: CFTimeInterval) {
     guard let spring = activeSpring else { return }
     let ty = spring.value(at: targetTime)
     refitScrollIndicators(atTranslation: ty)
-    emitPosition(
-      overrideTy: ty,
-      geometrySampleTy: spring.value(at: nextFrameTime),
-      frameTimestamp: nextFrameTime
-    )
+    emitPosition(overrideTy: ty)
   }
 
   private func finishSpring() {

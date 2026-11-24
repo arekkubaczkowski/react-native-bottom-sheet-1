@@ -91,12 +91,7 @@ export interface NativeProps extends ViewProps {
     Readonly<{ index: CodegenTypes.Int32 }>
   >;
   onPositionChange?: CodegenTypes.DirectEventHandler<
-    Readonly<{
-      position: CodegenTypes.Double;
-      index: CodegenTypes.Double;
-      cardBottom?: CodegenTypes.Double;
-      frameTimestamp?: CodegenTypes.Double;
-    }>
+    Readonly<{ position: CodegenTypes.Double; index: CodegenTypes.Double }>
   >;
   onCloseRequest?: CodegenTypes.DirectEventHandler<null>;
 }

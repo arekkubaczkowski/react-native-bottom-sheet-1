@@ -63,28 +63,6 @@ class BottomSheetHostViewSettleDurationTest {
     }
   }
 
-  @Test
-  fun `position samples carry the applied card bottom throughout settle`() {
-    val compactGap = 120.0
-    val fullGap = 20.0
-    withSheet(listOf(0.0, 300.0, 600.0), listOf(0.0, compactGap, fullGap)) { sheet, listener ->
-      sheet.setIndex(2)
-      idleFor(1_000L)
-
-      val hostHeight = HEIGHT_PX / sheet.resources.displayMetrics.density.toDouble()
-      val samples = listener.geometrySamples
-      assertEquals(listOf(2), listener.settles)
-      assertTrue(samples.size > 3)
-      assertEquals(hostHeight - compactGap, samples.first().cardBottom, 0.001)
-      assertEquals(hostHeight - fullGap, samples.last().cardBottom, 0.001)
-      assertTrue(samples.zipWithNext().all { (a, b) -> b.frameTimestamp >= a.frameTimestamp })
-      for (sample in samples) {
-        val gap = compactGap + (fullGap - compactGap) * (sample.index - 1.0)
-        assertEquals(hostHeight - gap, sample.cardBottom, 0.001)
-      }
-    }
-  }
-
   // Presses 100dp above the bottom edge, then moves through (distance px, duration ms) segments
   // and lifts where the last one ends.
   private fun BottomSheetHostView.drag(vararg segments: Pair<Float, Long>) {
@@ -125,7 +103,6 @@ class BottomSheetHostViewSettleDurationTest {
 
   private fun withSheet(
     detents: List<Double>,
-    bottomInsets: List<Double> = emptyList(),
     block: (BottomSheetHostView, SettleRecordingListener) -> Unit,
   ) {
     val controller = Robolectric.buildActivity(Activity::class.java).setup()
@@ -134,15 +111,7 @@ class BottomSheetHostViewSettleDurationTest {
     val listener = SettleRecordingListener()
     try {
       sheet.animateIn = false
-      sheet.setDetents(
-        detents.mapIndexed { index, value ->
-          mapOf(
-            "value" to value,
-            "kind" to "points",
-            "insetBottom" to (bottomInsets.getOrNull(index) ?: 0.0),
-          )
-        }
-      )
+      sheet.setDetents(detents.map { mapOf("value" to it, "kind" to "points") })
       sheet.setIndex(if (detents.size > 2) 1 else 0)
       val content = FrameLayout(activity)
       sheet.addSheetChild(content, 0)
@@ -174,24 +143,16 @@ class BottomSheetHostViewSettleDurationTest {
   }
 }
 
-private data class GeometrySample(
-  val index: Double,
-  val cardBottom: Double,
-  val frameTimestamp: Double,
-)
-
 private class SettleRecordingListener : BottomSheetViewListener {
   val indexChanges = mutableListOf<Int>()
   val settles = mutableListOf<Int>()
   val positions = mutableListOf<Double>()
-  val geometrySamples = mutableListOf<GeometrySample>()
   var peakPosition = 0.0
 
   fun clear() {
     indexChanges.clear()
     settles.clear()
     positions.clear()
-    geometrySamples.clear()
     peakPosition = 0.0
   }
 
@@ -203,13 +164,7 @@ private class SettleRecordingListener : BottomSheetViewListener {
     settles.add(index)
   }
 
-  override fun onPositionChange(
-    position: Double,
-    index: Double,
-    cardBottom: Double,
-    frameTimestamp: Double,
-  ) {
-    geometrySamples.add(GeometrySample(index, cardBottom, frameTimestamp))
+  override fun onPositionChange(position: Double, index: Double) {
     positions.add(position)
     peakPosition = maxOf(peakPosition, position)
   }

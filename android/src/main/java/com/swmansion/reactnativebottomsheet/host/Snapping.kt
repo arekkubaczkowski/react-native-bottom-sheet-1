@@ -119,13 +119,11 @@ internal class Snapping(
     scrim.updateScrim(position)
     scrim.updateSheetVisibility(position)
     host.updateInteractionState()
-    val cardBottom = card.updateCardGeometry()
     host.listener?.onPositionChange(
       (position / state.density).toDouble(),
       detentIndexAt(position).toDouble(),
-      (cardBottom / state.density).toDouble(),
-      System.nanoTime() / 1_000_000.0,
     )
+    card.updateCardGeometry()
     contentRegion.updateShadowState(ty)
     state.scrollIndicators.refit()
   }

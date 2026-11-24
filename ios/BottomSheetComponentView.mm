@@ -519,16 +519,11 @@ using namespace facebook::react;
 - (void)bottomSheetView:(BottomSheetContentView *)view
       didChangePosition:(CGFloat)position
                   index:(CGFloat)index
-             cardBottom:(CGFloat)cardBottom
-         frameTimestamp:(CFTimeInterval)frameTimestamp
 {
   if (_eventEmitter) {
     auto emitter = std::static_pointer_cast<const BottomSheetViewEventEmitter>(_eventEmitter);
     emitter->onPositionChange(
-        {.position = static_cast<double>(position),
-         .index = static_cast<double>(index),
-         .cardBottom = static_cast<double>(cardBottom),
-         .frameTimestamp = static_cast<double>(frameTimestamp)});
+        {.position = static_cast<double>(position), .index = static_cast<double>(index)});
   }
 
   [self pushContentGeometry];

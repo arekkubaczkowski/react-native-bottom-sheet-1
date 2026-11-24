@@ -4,8 +4,7 @@ import UIKit
   func bottomSheetHostingView(_ view: BottomSheetHostingView, didChangeIndex index: Int)
   func bottomSheetHostingView(_ view: BottomSheetHostingView, didSettle index: Int)
   func bottomSheetHostingView(
-    _ view: BottomSheetHostingView, didChangePosition position: CGFloat, index: CGFloat,
-    cardBottom: CGFloat, frameTimestamp: CFTimeInterval
+    _ view: BottomSheetHostingView, didChangePosition position: CGFloat, index: CGFloat
   )
   func bottomSheetHostingView(_ view: BottomSheetHostingView, didReportError message: String)
   /// Fired after each layout pass with fresh native geometry, so the component
@@ -222,16 +221,6 @@ public final class BottomSheetHostingView: UIView {
   /// The centers and sizes that the running content keyframes were built from.
   var contentAnimationLayouts: [CGRect] = []
 
-  /// Extra lead applied to the spring prediction when emitting follower
-  /// positions, in frames (scaled by the display link's actual frame duration,
-  /// so it means the same thing at 60Hz and 120Hz). `targetTimestamp` alone
-  /// still trails the sheet slightly: the render server's sampling phase for
-  /// the keyframe animation is undocumented, and the follower's transform
-  /// commits one runloop turn after this callback. Tune by bisecting on a
-  /// physical device: 0 = no bias, 1 = predict one extra frame ahead. Too high
-  /// and followers visibly lead the sheet at the start of a settle.
-  static let followerPredictionBiasFrames: CFTimeInterval = 1.0
-
   override public init(frame: CGRect) {
     super.init(frame: frame)
     backgroundColor = .clear
@@ -363,7 +352,7 @@ public final class BottomSheetHostingView: UIView {
     // wrapper's target size (and the overlay frame) into the shadow tree.
     eventDelegate?.bottomSheetHostingViewDidLayout(self)
 
-    if !hasLaidOut, !detentSpecs.isEmpty {
+    if !hasLaidOut && !detentSpecs.isEmpty {
       let indexToApply = pendingIndex ?? targetIndex
       let clampedIndex = max(0, min(detentSpecs.count - 1, indexToApply))
 
@@ -678,31 +667,16 @@ public final class BottomSheetHostingView: UIView {
 
   /// `overrideTy` is the spring's predicted translationY for the upcoming frame
   /// (passed during a settle). Without it we read the current on-screen value.
-  func emitPosition(
-    overrideTy: CGFloat? = nil,
-    geometrySampleTy: CGFloat? = nil,
-    frameTimestamp: CFTimeInterval = CACurrentMediaTime()
-  ) {
+  func emitPosition(overrideTy: CGFloat? = nil) {
     let maxHeight = sheetContainerHeight
     let ty = overrideTy ?? currentTranslationY
     let position = maxHeight - ty
     updateScrim(forPosition: position)
     updateSheetVisibility(forPosition: position)
     updateInteractionState()
-    if let eventDelegate {
-      eventDelegate.bottomSheetHostingView(
-        self, didChangePosition: position, index: detentIndex(forPosition: position),
-        cardBottom: cardBottomInHost(forTranslation: geometrySampleTy ?? ty),
-        frameTimestamp: frameTimestamp * 1000
-      )
-    }
-  }
-
-  private func cardBottomInHost(forTranslation ty: CGFloat) -> CGFloat {
-    let height = sheetContainer.bounds.height
-    let origin = sheetContainer.center.y - height / 2
-    let card = cardRect(forPosition: sheetContainerHeight - ty)
-    return origin + ty + card.maxY
+    eventDelegate?.bottomSheetHostingView(
+      self, didChangePosition: position, index: detentIndex(forPosition: position)
+    )
   }
 
   func startDisplayLink() {

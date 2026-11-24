@@ -34,15 +34,14 @@ internal class Card(
 
   /** Outset card shadows, with lengths in dp. */
   fun setSurfaceShadows(values: List<CardShadow>) {
-    val shadows =
-      values.map {
-        it.copy(
-          offsetX = it.offsetX * state.density,
-          offsetY = it.offsetY * state.density,
-          blurRadius = it.blurRadius * state.density,
-          spreadDistance = it.spreadDistance * state.density,
-        )
-      }
+    val shadows = values.map {
+      it.copy(
+        offsetX = it.offsetX * state.density,
+        offsetY = it.offsetY * state.density,
+        blurRadius = it.blurRadius * state.density,
+        spreadDistance = it.spreadDistance * state.density,
+      )
+    }
     for (shadowView in shadowViews) shadowView.setShadows(shadows)
     updateCardGeometry()
   }
@@ -85,7 +84,7 @@ internal class Card(
    * RenderNode work, never layout: the clip is an outline (or clip bounds), and the shadow halves
    * are moved and clipped. Only side gaps that change as the sheet moves redraw the shadows.
    */
-  fun updateCardGeometry(): Float {
+  fun updateCardGeometry() {
     val position = currentPosition()
     val insets = cardInsetsAt(position)
     val span = state.placeCard(insets, state.sheetContainer.width.toFloat())
@@ -95,7 +94,6 @@ internal class Card(
     clipContainer.setCard(left, 0f, right, bottom)
     updateContentTransform(left, right)
     updateCardShadows(left, right, bottom)
-    return state.sheetContainer.y + bottom
   }
 
   private fun currentPosition(): Float =
