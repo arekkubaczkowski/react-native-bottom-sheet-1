@@ -126,12 +126,12 @@ class BottomSheetViewManager :
           "cornerRadius" to
             (if (map.hasKey("cornerRadius")) map.getDouble("cornerRadius") else -1.0),
           "cornerRadiusTransitionDistance" to inset("cornerRadiusTransitionDistance"),
+          "bottomAnchoredContentTopInset" to inset("bottomAnchoredContentTopInset"),
           "maxWidth" to inset("maxWidth"),
           "placementBias" to
             (if (map.hasKey("placementBias")) map.getDouble("placementBias") else 0.5),
-          "scrimOpacity" to
-            (if (map.hasKey("scrimOpacity")) map.getDouble("scrimOpacity") else 1.0),
-        ),
+          "scrimOpacity" to (if (map.hasKey("scrimOpacity")) map.getDouble("scrimOpacity") else 1.0),
+        )
       )
     }
     view.setDetents(list)
@@ -214,7 +214,7 @@ class BottomSheetViewManager :
             blurRadius = shadow.getDouble("blurRadius").toFloat(),
             spreadDistance = shadow.getDouble("spreadDistance").toFloat(),
             color = shadowColor(view, shadow),
-          ),
+          )
         )
       }
     }

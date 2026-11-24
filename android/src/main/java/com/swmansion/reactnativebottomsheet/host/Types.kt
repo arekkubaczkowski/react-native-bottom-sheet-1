@@ -37,6 +37,7 @@ internal data class RawDetentSpec(
   // The widest open card, which the content is laid out against. Flagged in JS, which lays the
   // content out.
   val widestCard: Boolean,
+  val bottomAnchoredContentTopInset: Float = 0f,
 )
 
 /**
@@ -47,12 +48,15 @@ internal data class DetentSpec(
   val position: Float,
   val programmatic: Boolean,
   val insets: DetentInsets,
+  val bottomAnchoredContentTopInset: Float = 0f,
 )
 
 internal data class StateSnapshot(
   val contentOffsetX: Double,
   val contentOffsetY: Double,
   val contentScale: Double,
+  val cardLeft: Double,
+  val cardHeight: Double,
   val frameWidth: Double,
   val frameHeight: Double,
   val contentRegionInset: Double,

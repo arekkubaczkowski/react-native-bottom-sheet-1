@@ -35,11 +35,13 @@ export interface BottomSheetProps {
     /** Sheet contents, including any scrollable content. */
     children: ReactNode;
     /**
-     * iOS-only content pinned to the bottom edge of the visible card. It is laid
+     * Native content pinned to the bottom edge of the visible card. It is laid
      * out at the largest detent's size and clipped by the card at shorter
      * detents. It sits above the surface and behind the regular children.
      * Regular children alone determine the height of a `'content'` detent.
      */
+    bottomAnchoredContent?: ReactNode;
+    /** @deprecated Use `bottomAnchoredContent`. */
     iosBottomAnchoredContent?: ReactNode;
     /**
      * The fill of the sheet's surface: an optional element, typically a

@@ -4,6 +4,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.ViewTreeObserver
 import com.facebook.react.R
+import com.swmansion.reactnativebottomsheet.BottomSheetAnchorClipLayout
 import com.swmansion.reactnativebottomsheet.BottomSheetCardClipLayout
 import com.swmansion.reactnativebottomsheet.BottomSheetHostView.Companion.CONTENT_HEIGHT_MARKER_NATIVE_ID
 import com.swmansion.reactnativebottomsheet.BottomSheetSurfaceView
@@ -29,9 +30,7 @@ internal class Detents(
   private var pendingInitialContentDetentFrames = 0
 
   private val contentHeightMarkerLayoutListener =
-    View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ ->
-      refreshDetentsFromLayout()
-    }
+    View.OnLayoutChangeListener { _, _, _, _, _, _, _, _, _ -> refreshDetentsFromLayout() }
 
   // Recomputes whether the card clips, from the detents' insets and whether the maximum width makes
   // the sheet's column narrower than this host.
@@ -52,33 +51,35 @@ internal class Detents(
     // opacities stay aligned by index.
     val entries = raw.filter { it["value"] is Number }
     scrim.scrimOpacities = entries.map { (it["scrimOpacity"] as? Number)?.toFloat() ?: 1f }
-    state.rawDetentSpecs = entries.map { dict ->
-      val value = (dict["value"] as Number).toDouble()
-      val kind =
-        when (dict["kind"] as? String) {
-          "content" -> DetentKind.CONTENT
-          "percentage" -> DetentKind.PERCENTAGE
-          else -> DetentKind.POINTS
-        }
-      val programmatic = dict["programmatic"] as? Boolean ?: false
-      val nativeValue =
-        if (kind == DetentKind.POINTS) (value * state.density).toFloat() else value.toFloat()
-      val inset = { key: String -> ((dict[key] as? Number)?.toFloat() ?: 0f) * state.density }
-      val usesStatusBarTopInset = dict["usesStatusBarTopInset"] as? Boolean ?: false
-      RawDetentSpec(
-        value = nativeValue,
-        kind = kind,
-        programmatic = programmatic,
-        insets =
-          DetentInsets(
-            top = if (usesStatusBarTopInset) null else inset("insetTop"),
-            left = inset("insetLeft"),
-            right = inset("insetRight"),
-            bottom = inset("insetBottom"),
-          ),
-        widestCard = dict["widestCard"] as? Boolean ?: false,
-      )
-    }
+    state.rawDetentSpecs =
+      entries.map { dict ->
+        val value = (dict["value"] as Number).toDouble()
+        val kind =
+          when (dict["kind"] as? String) {
+            "content" -> DetentKind.CONTENT
+            "percentage" -> DetentKind.PERCENTAGE
+            else -> DetentKind.POINTS
+          }
+        val programmatic = dict["programmatic"] as? Boolean ?: false
+        val nativeValue =
+          if (kind == DetentKind.POINTS) (value * state.density).toFloat() else value.toFloat()
+        val inset = { key: String -> ((dict[key] as? Number)?.toFloat() ?: 0f) * state.density }
+        val usesStatusBarTopInset = dict["usesStatusBarTopInset"] as? Boolean ?: false
+        RawDetentSpec(
+          value = nativeValue,
+          kind = kind,
+          programmatic = programmatic,
+          insets =
+            DetentInsets(
+              top = if (usesStatusBarTopInset) null else inset("insetTop"),
+              left = inset("insetLeft"),
+              right = inset("insetRight"),
+              bottom = inset("insetBottom"),
+            ),
+          widestCard = dict["widestCard"] as? Boolean ?: false,
+          bottomAnchoredContentTopInset = inset("bottomAnchoredContentTopInset"),
+        )
+      }
     state.widestCardInsets =
       state.rawDetentSpecs.firstOrNull { it.widestCard }?.insets ?: DetentInsets()
     // Sheet-wide, carried on every detent so they arrive with the detents.
@@ -109,17 +110,18 @@ internal class Detents(
     }
     contentRegion.recomputeNativeGeometry()
     refreshDetentsFromLayout()
-    val cornerStyles = entries.map {
-      DetentCornerRadius(
-        radius =
-          (it["cornerRadius"] as? Number)
-            ?.toFloat()
-            ?.takeIf { radius -> radius >= 0f }
-            ?.times(state.density),
-        distance =
-          ((it["cornerRadiusTransitionDistance"] as? Number)?.toFloat() ?: 0f) * state.density,
-      )
-    }
+    val cornerStyles =
+      entries.map {
+        DetentCornerRadius(
+          radius =
+            (it["cornerRadius"] as? Number)
+              ?.toFloat()
+              ?.takeIf { radius -> radius >= 0f }
+              ?.times(state.density),
+          distance =
+            ((it["cornerRadiusTransitionDistance"] as? Number)?.toFloat() ?: 0f) * state.density,
+        )
+      }
     card.setDetentCornerRadii(cornerStyles.takeIf { styles -> styles.any { it.radius != null } })
     // The re-resolved detents can change the card's shape at its current position.
     contentRegion.recomputeNativeGeometry()
@@ -209,12 +211,17 @@ internal class Detents(
       previousPosition?.let {
         if (position < it) {
           throw IllegalArgumentException(
-            "Invalid bottom sheet detent at index $index: resolved position ${position / state.density} is lower than previous detent position ${it / state.density}. Detents must be passed in ascending order.",
+            "Invalid bottom sheet detent at index $index: resolved position ${position / state.density} is lower than previous detent position ${it / state.density}. Detents must be passed in ascending order."
           )
         }
       }
       previousPosition = position
-      DetentSpec(position = position, programmatic = spec.programmatic, insets = spec.insets)
+      DetentSpec(
+        position = position,
+        programmatic = spec.programmatic,
+        insets = spec.insets,
+        bottomAnchoredContentTopInset = spec.bottomAnchoredContentTopInset,
+      )
     }
   }
 
@@ -406,22 +413,23 @@ internal class Detents(
     if (!observer.isAlive) return
 
     pendingInitialContentDetentFrames = 0
-    val listener = ViewTreeObserver.OnPreDrawListener {
-      refreshContentHeightMarker()
-      refreshDetentsFromLayout()
-      // refreshDetentsFromLayout() completes and stops observing via
-      // trySnapPendingInitialContentDetent() once the target is measurable.
-      // If it is still pending, this frame was unproductive: bound how many
-      // such frames we spend so a content detent that never becomes
-      // measurable cannot keep us redrawing forever.
-      if (
-        pendingInitialContentDetentSnap &&
-          ++pendingInitialContentDetentFrames >= MAX_PENDING_INITIAL_CONTENT_DETENT_FRAMES
-      ) {
-        removePendingInitialContentDetentObserver()
+    val listener =
+      ViewTreeObserver.OnPreDrawListener {
+        refreshContentHeightMarker()
+        refreshDetentsFromLayout()
+        // refreshDetentsFromLayout() completes and stops observing via
+        // trySnapPendingInitialContentDetent() once the target is measurable.
+        // If it is still pending, this frame was unproductive: bound how many
+        // such frames we spend so a content detent that never becomes
+        // measurable cannot keep us redrawing forever.
+        if (
+          pendingInitialContentDetentSnap &&
+            ++pendingInitialContentDetentFrames >= MAX_PENDING_INITIAL_CONTENT_DETENT_FRAMES
+        ) {
+          removePendingInitialContentDetentObserver()
+        }
+        true
       }
-      true
-    }
 
     // Keep the exact observer instance used for registration. Android can
     // replace a ViewTreeObserver across attach/detach boundaries, and listeners
@@ -465,7 +473,7 @@ internal class Detents(
   private fun findContentView(): ViewGroup? =
     (0 until clipContainer.childCount)
       .map { clipContainer.getChildAt(it) }
-      .firstOrNull { it !== surfaceView } as? ViewGroup
+      .firstOrNull { it !== surfaceView && it !is BottomSheetAnchorClipLayout } as? ViewGroup
 
   private fun findContentHeightMarker(): View? {
     // Always read the marker from the content, never from the surface.

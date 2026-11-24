@@ -122,7 +122,7 @@ export type DetentConfig = Readonly<{
      */
     cornerRadiusTransitionDistance?: number;
     /**
-     * Space at the top of the visible card reserved for regular children on iOS.
+     * Space at the top of the visible card reserved for regular children.
      * Clips the bottom-anchored slot in layout units without resizing its content.
      * Interpolates between open detents and defaults to zero.
      */

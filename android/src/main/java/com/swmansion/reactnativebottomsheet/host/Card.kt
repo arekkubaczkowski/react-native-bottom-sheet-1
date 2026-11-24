@@ -1,10 +1,12 @@
 package com.swmansion.reactnativebottomsheet.host
 
 import android.view.View
+import com.swmansion.reactnativebottomsheet.BottomSheetAnchorClipLayout
 import com.swmansion.reactnativebottomsheet.BottomSheetCardClipLayout
 import com.swmansion.reactnativebottomsheet.BottomSheetCardShadowView
 import com.swmansion.reactnativebottomsheet.CardShadow
 import kotlin.math.round
+import kotlin.math.roundToInt
 
 private val NO_INSETS = DetentInsets()
 
@@ -23,6 +25,11 @@ internal class Card(
   val shadowViews = listOf(shadowTop, shadowBottom)
   var shadowContentOffsetX = 0f
   var shadowContentScale = 1f
+  var shadowAnchorCardLeft = 0f
+    private set
+
+  var shadowAnchorCardHeight = 0f
+    private set
 
   private val surfaceRadii = FloatArray(4)
   private val interpolatedRadii = FloatArray(4)
@@ -67,14 +74,15 @@ internal class Card(
 
   /** Outset card shadows, with lengths in dp. */
   fun setSurfaceShadows(values: List<CardShadow>) {
-    val shadows = values.map {
-      it.copy(
-        offsetX = it.offsetX * state.density,
-        offsetY = it.offsetY * state.density,
-        blurRadius = it.blurRadius * state.density,
-        spreadDistance = it.spreadDistance * state.density,
-      )
-    }
+    val shadows =
+      values.map {
+        it.copy(
+          offsetX = it.offsetX * state.density,
+          offsetY = it.offsetY * state.density,
+          blurRadius = it.blurRadius * state.density,
+          spreadDistance = it.spreadDistance * state.density,
+        )
+      }
     for (shadowView in shadowViews) shadowView.setShadows(shadows)
     updateCardGeometry()
   }
@@ -126,7 +134,7 @@ internal class Card(
     val bottom = cardBottomAt(position, insets)
     updateCornerRadii(position)
     clipContainer.setCard(left, 0f, right, bottom)
-    updateContentTransform(left, right)
+    updateContentTransform(left, right, bottom, position)
     updateCardShadows(left, right, bottom)
   }
 
@@ -149,25 +157,55 @@ internal class Card(
     return if (scale > 0f) height / scale else height
   }
 
-  /** Scales the surface and content to the card's width and pins them to its top-left corner. */
-  private fun updateContentTransform(cardLeft: Float, cardRight: Float) {
+  /** Fits the content to the card's width and places it against its chosen edge. */
+  private fun updateContentTransform(
+    cardLeft: Float,
+    cardRight: Float,
+    cardBottom: Float,
+    position: Float,
+  ) {
     val widest = state.placeCard(state.widestCardInsets, state.sheetContainer.width.toFloat()).width
     val scale = if (widest > 0f) (cardRight - cardLeft) / widest else 1f
+    shadowAnchorCardLeft = 0f
+    shadowAnchorCardHeight = 0f
     for (i in 0 until clipContainer.childCount) {
-      val child = clipContainer.getChildAt(i)
+      val hostChild = clipContainer.getChildAt(i)
+      val anchor = hostChild as? BottomSheetAnchorClipLayout
+      val child = anchor?.content ?: hostChild
       child.pivotX = 0f
       child.pivotY = 0f
       child.scaleX = scale
       child.scaleY = scale
       child.translationX = cardLeft - child.left
+      if (anchor != null) {
+        val bottom = cardBottom.roundToInt()
+        val top = (anchorTopInset(position) * scale).roundToInt().coerceIn(0, bottom)
+        anchor.place(clipContainer.width, top, bottom)
+        child.translationY = cardBottom - top - child.height * scale
+        shadowAnchorCardLeft = cardLeft
+        shadowAnchorCardHeight = cardBottom
+      }
     }
     shadowContentScale = scale
     // The shadow tree scales and shifts the children from where they are laid out, so `measure`
     // follows what is drawn even before a new layout catches up with a resize.
+    val first = clipContainer.getChildAt(0)
     val contentLeft =
-      if (clipContainer.childCount > 0) clipContainer.getChildAt(0).left.toFloat()
-      else state.contentLeft(widest)
+      ((first as? BottomSheetAnchorClipLayout)?.content ?: first)?.left?.toFloat()
+        ?: state.contentLeft(widest)
     shadowContentOffsetX = cardLeft - scale * contentLeft
+  }
+
+  private fun anchorTopInset(position: Float): Float {
+    val specs = state.detentSpecs
+    val upperIndex = specs.indexOfFirst { position < it.position }
+    if (upperIndex < 0) return specs.lastOrNull()?.bottomAnchoredContentTopInset ?: 0f
+    val upper = specs[upperIndex]
+    if (upperIndex == 0) return upper.bottomAnchoredContentTopInset
+    val lower = specs[upperIndex - 1]
+    val progress = (position - lower.position) / (upper.position - lower.position)
+    val start = lower.bottomAnchoredContentTopInset
+    return start + (upper.bottomAnchoredContentTopInset - start) * progress
   }
 
   // Fabric recycles the view, which must not keep the card's scale.
@@ -175,6 +213,7 @@ internal class Card(
     view.scaleX = 1f
     view.scaleY = 1f
     view.translationX = 0f
+    if (view.parent is BottomSheetAnchorClipLayout) view.translationY = 0f
   }
 
   private fun updateCardShadows(cardLeft: Float, cardRight: Float, cardBottom: Float) {
@@ -240,7 +279,8 @@ internal class Card(
     clipContainer.layout(0, 0, containerWidth, containerHeight)
     // Fabric only measures the children, so the host applies the content's Yoga position.
     for (i in 0 until clipContainer.childCount) {
-      val child = clipContainer.getChildAt(i)
+      val hostChild = clipContainer.getChildAt(i)
+      val child = (hostChild as? BottomSheetAnchorClipLayout)?.content ?: hostChild
       val contentLeft = state.contentLeft(child.measuredWidth.toFloat()).toInt()
       child.layout(contentLeft, 0, contentLeft + child.measuredWidth, child.measuredHeight)
     }
@@ -249,5 +289,7 @@ internal class Card(
   fun clearShadowContentTransform() {
     shadowContentOffsetX = 0f
     shadowContentScale = 1f
+    shadowAnchorCardLeft = 0f
+    shadowAnchorCardHeight = 0f
   }
 }

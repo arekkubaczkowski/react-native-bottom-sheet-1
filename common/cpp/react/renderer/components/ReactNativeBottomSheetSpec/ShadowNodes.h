@@ -127,7 +127,7 @@ class BottomSheetCardContent {
     transform.matrix[12] = cardOffsetX_ - (1 - cardScale_) * center.x
         - (cardBottom_ ? cardScale_ * frame.origin.x : 0);
     // The anchored wrapper reports the same extra vertical translation as
-    // its iOS layer, so Fabric measures its children at their drawn position.
+    // its native view, so Fabric measures its children at their drawn position.
     const auto anchorOffset = cardBottom_
         ? *cardBottom_ - cardScale_ * (frame.origin.y + frame.size.height)
         : 0;
