@@ -1,12 +1,9 @@
 package com.swmansion.reactnativebottomsheet
 
-import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.module.annotations.ReactModule
-import com.facebook.react.uimanager.PointerEvents
 import com.facebook.react.uimanager.ThemedReactContext
 import com.facebook.react.uimanager.ViewGroupManager
 import com.facebook.react.uimanager.ViewManagerDelegate
-import com.facebook.react.viewmanagers.BottomSheetContentWrapperViewManagerDelegate
 import com.facebook.react.viewmanagers.BottomSheetContentWrapperViewManagerInterface
 import com.facebook.react.views.view.ReactViewGroup
 
@@ -24,21 +21,7 @@ class BottomSheetContentWrapperViewManager :
     const val NAME = "BottomSheetContentWrapperView"
   }
 
-  private val generatedDelegate = BottomSheetContentWrapperViewManagerDelegate(this)
-  private val delegate =
-    object : ViewManagerDelegate<ReactViewGroup> {
-      override fun setProperty(view: ReactViewGroup, propName: String, value: Any?) {
-        if (propName == "pointerEvents") {
-          view.pointerEvents = PointerEvents.parsePointerEvents(value as? String)
-        } else {
-          generatedDelegate.setProperty(view, propName, value)
-        }
-      }
-
-      override fun receiveCommand(view: ReactViewGroup, commandName: String, args: ReadableArray) {
-        generatedDelegate.receiveCommand(view, commandName, args)
-      }
-    }
+  private val delegate = BottomSheetContentPointerEventsDelegate(this)
 
   override fun getDelegate(): ViewManagerDelegate<ReactViewGroup> = delegate
 
