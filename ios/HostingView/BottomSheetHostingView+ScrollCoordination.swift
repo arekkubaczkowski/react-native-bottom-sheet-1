@@ -357,7 +357,7 @@ extension BottomSheetHostingView {
         setContentInteractionEnabled(false)
       }
     }
-    if activeSpring != nil {
+    if bottomAnchoredContentView != nil, activeSpring != nil {
       return presentedTarget(at: sheetContainer.convert(location, to: self), event: nil)
     }
     return sheetContainer.hitTest(location, with: nil)
@@ -567,19 +567,27 @@ extension BottomSheetHostingView {
   }
 
   private func fitScrollIndicator(of scrollView: UIScrollView, translation: CGFloat) {
-    var wrapper: UIView = scrollView
-    while wrapper.superview !== clipContainer {
-      guard let parent = wrapper.superview else { return }
-      wrapper = parent
+    let hiddenTop: CGFloat
+    let hiddenBottom: CGFloat
+    if let wrapper = bottomAnchoredContentView, scrollView.isDescendant(of: wrapper) {
+      let position = sheetContainerHeight - translation
+      let card = cardRect(forPosition: position)
+      let transform = childToSheet(wrapper, card: card)
+      guard transform.d > 0 else { return }
+      let viewport = bounds.offsetBy(dx: sheetContainer.bounds.midX - sheetContainer.center.x,
+                                     dy: sheetContainer.bounds.midY - sheetContainer.center.y - translation)
+      let visible = bottomAnchorBounds(in: card, position: position).intersection(viewport)
+      guard !visible.isNull else { return }
+      let track = wrapper.convert(visible.applying(transform.inverted()), to: scrollView)
+      hiddenTop = min(scrollView.bounds.height, max(0, track.minY - scrollView.bounds.minY))
+      hiddenBottom = min(scrollView.bounds.height, max(0, scrollView.bounds.maxY - track.maxY))
+    } else {
+      let shift = translation - sheetContainer.transform.ty
+      let hidden = max(0, scrollView.convert(scrollView.bounds, to: self).maxY + shift - bounds.height)
+      let inverted = isInverted(scrollView)
+      hiddenTop = inverted ? hidden : 0
+      hiddenBottom = inverted ? 0 : hidden
     }
-    let card = cardRect(forPosition: sheetContainerHeight - translation)
-    let transform = childToSheet(wrapper, card: card)
-    guard transform.d > 0 else { return }
-    let hostTop = sheetContainer.bounds.midY - sheetContainer.center.y - translation
-    let viewport = bounds.offsetBy(dx: sheetContainer.bounds.midX - sheetContainer.center.x, dy: hostTop)
-    let visible = card.intersection(viewport)
-    guard !visible.isNull else { return }
-    let track = wrapper.convert(visible.applying(transform.inverted()), to: scrollView)
     let current = scrollView.verticalScrollIndicatorInsets
     let fit = ScrollIndicatorFit.attached(to: scrollView) ?? ScrollIndicatorFit(inset: current)
     fit.owner = self
@@ -591,13 +599,19 @@ extension BottomSheetHostingView {
     ScrollIndicatorFit.attach(fit, to: scrollView)
     scrollIndicatorFits.setObject(fit, forKey: scrollView)
     // Any other inset than the one applied last is the caller's.
-    if current.top != fit.appliedInset.top { fit.callerInset.top = current.top }
-    if current.bottom != fit.appliedInset.bottom { fit.callerInset.bottom = current.bottom }
+    if current.top != fit.appliedInset.top {
+      fit.callerInset.top = current.top
+    }
+    if current.bottom != fit.appliedInset.bottom {
+      fit.callerInset.bottom = current.bottom
+    }
     var adjusted = current
-    adjusted.top = fit.callerInset.top + min(scrollView.bounds.height, max(0, track.minY - scrollView.bounds.minY))
-    adjusted.bottom = fit.callerInset.bottom + min(scrollView.bounds.height, max(0, scrollView.bounds.maxY - track.maxY))
+    adjusted.top = fit.callerInset.top + hiddenTop
+    adjusted.bottom = fit.callerInset.bottom + hiddenBottom
     fit.appliedInset = adjusted
-    if adjusted != current { scrollView.verticalScrollIndicatorInsets = adjusted }
+    if adjusted != current {
+      scrollView.verticalScrollIndicatorInsets = adjusted
+    }
   }
 
   /// Listens to the touched scroll views' indicator drags. A scrub moves the

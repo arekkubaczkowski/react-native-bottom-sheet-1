@@ -37,6 +37,17 @@ struct BottomSheetHostSettleTests {
     precondition(chain.first?.scrollView === list)
     host.activeSpring = nil
 
+    host.bottomAnchorTopInsets = [56, 104]
+    host.setSheetTranslation(400)
+    precondition(host.hitTest(CGPoint(x: 120, y: 440), with: nil) !== list)
+    precondition(host.hitTest(CGPoint(x: 120, y: 480), with: nil) === list)
+    host.fitScrollIndicators(of: [state])
+    precondition(list.verticalScrollIndicatorInsets.top == 456)
+    host.releaseScrollIndicatorFits()
+
+    host.detentSpecs.append(host.detentSpecs[1])
+    host.bottomAnchorTopInsets = [56, 12, 104]
+
     let spring = CAKeyframeAnimation(keyPath: "transform.translation.y")
     let translations: [CGFloat] = [0, 10, 30, 400]
     spring.values = translations
@@ -47,9 +58,11 @@ struct BottomSheetHostSettleTests {
     guard let animation = slot.layer.animation(forKey: BottomSheetHostingView.cardContentAnimationKey)
       as? CAKeyframeAnimation, let transforms = animation.values as? [NSValue],
       let clip = host.clipContainer.layer.animation(forKey: BottomSheetHostingView.cardBoundsAnimationKey)
-      as? CAKeyframeAnimation, let rects = clip.values as? [NSValue]
+      as? CAKeyframeAnimation, let rects = clip.values as? [NSValue],
+      let anchorClip = host.bottomAnchorViewport.layer.animation(forKey: BottomSheetHostingView.cardBoundsAnimationKey)
+      as? CAKeyframeAnimation, let anchors = anchorClip.values as? [NSValue]
     else { fatalError("Missing slot or clip keyframes") }
-    for track in [animation, clip] {
+    for track in [animation, clip, anchorClip] {
       precondition(track.keyTimes == spring.keyTimes && track.duration == spring.duration)
       precondition(track.beginTime == spring.beginTime)
     }
@@ -57,7 +70,26 @@ struct BottomSheetHostSettleTests {
     for index in translations.indices {
       let transform = transforms[index].caTransform3DValue
       let bottom = slot.center.y + slot.bounds.height / 2 * transform.m22 + transform.m42
+      let anchor = anchors[index].cgRectValue
       precondition(bottom == rects[index].cgRectValue.maxY && bottom + translations[index] == 800)
+      precondition(anchor.minY == 104 - 48 * translations[index] / 400 && anchor.maxY == bottom)
     }
+
+    host.removeSettleAnimations()
+    host.setSheetTranslation(150)
+    precondition(slot.layer.animation(forKey: BottomSheetHostingView.cardContentAnimationKey) == nil)
+    precondition(slot.convert(slot.bounds, to: host).maxY == 800)
+    precondition(host.bottomAnchorViewport.bounds.minY == 86)
+    spring.values = [150, 80, 0]
+    spring.keyTimes = [0, 0.5, 1]
+    host.addCardAnimations(matching: spring)
+    host.unmountChildComponentView(slot)
+    precondition(slot.layer.animationKeys() == nil && slot.layer.transform.m42 == 0)
+    precondition(host.bottomAnchorViewport.superview == nil && !host.clipContainer.clipsToBounds)
+    host.mountChildComponentView(slot, atIndex: 0)
+    precondition(slot.layer.animation(forKey: BottomSheetHostingView.cardContentAnimationKey) != nil)
+    host.resetSheetState()
+    precondition(slot.superview == nil && CATransform3DIsIdentity(slot.layer.transform))
+    precondition(host.bottomAnchorTopInsets.isEmpty && host.bottomAnchoredContentView == nil)
   }
 }

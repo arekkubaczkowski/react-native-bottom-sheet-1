@@ -36,6 +36,7 @@ import {
   isNormalizedDetentClosed,
   type ModalDetent,
   normalizeDetents,
+  resolveBottomAnchoredContent,
   resolveSurfaceStyle,
   type SurfaceStyle,
   validateIndex,
@@ -99,11 +100,13 @@ export interface BottomSheetProps {
   /** Sheet contents, including any scrollable content. */
   children: ReactNode;
   /**
-   * iOS-only content pinned to the bottom edge of the visible card. It is laid
+   * Native content pinned to the bottom edge of the visible card. It is laid
    * out at the largest detent's size and clipped by the card at shorter
    * detents. It sits above the surface and behind the regular children.
    * Regular children alone determine the height of a `'content'` detent.
    */
+  bottomAnchoredContent?: ReactNode;
+  /** @deprecated Use `bottomAnchoredContent`. */
   iosBottomAnchoredContent?: ReactNode;
   /**
    * The fill of the sheet's surface: an optional element, typically a
@@ -320,6 +323,7 @@ let lastOpenOrder = 0;
 export const BottomSheet = (props: BottomSheetProps) => {
   const {
     children,
+    bottomAnchoredContent,
     iosBottomAnchoredContent,
     surface,
     surfaceStyle,
@@ -350,10 +354,12 @@ export const BottomSheet = (props: BottomSheetProps) => {
   const resolvedCollapseCoordination =
     typeof coordination === 'string' ? coordination : coordination.collapse;
   const usesWindowOverlay = modal && windowOverlay;
-  const hasBottomAnchoredContent =
-    Platform.OS === 'ios' &&
-    iosBottomAnchoredContent != null &&
-    typeof iosBottomAnchoredContent !== 'boolean';
+  const anchoredContent = resolveBottomAnchoredContent(
+    Platform.OS,
+    bottomAnchoredContent,
+    iosBottomAnchoredContent
+  );
+  const hasBottomAnchoredContent = anchoredContent != null;
   // All real geometry — the sheet's frame, the content wrapper's bounds, and
   // the default top inset (the overlapping status-bar inset) — is measured
   // natively from the window the sheet actually lives in and flows into the
@@ -574,7 +580,7 @@ export const BottomSheet = (props: BottomSheetProps) => {
               pointerEvents="box-none"
               style={[styles.absoluteCardChild, absoluteCardChildStyle]}
             >
-              {iosBottomAnchoredContent}
+              {anchoredContent}
             </BottomSheetContentWrapperView>
           )}
           <BottomSheetContentWrapperView

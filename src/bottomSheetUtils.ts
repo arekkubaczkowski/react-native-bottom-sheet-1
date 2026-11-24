@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   I18nManager,
   Platform,
@@ -16,9 +17,19 @@ import {
 // `BottomSheetHostView.kt`; keep the three in sync. The web host imports it.
 export const CONTENT_HEIGHT_MARKER_NATIVE_ID =
   'swm-bottom-sheet-content-height-marker';
-// Identifies the optional iOS anchor in both the native host and Fabric.
+// Identifies the optional native anchor in both the native host and Fabric.
 export const BOTTOM_ANCHORED_CONTENT_NATIVE_ID =
   'swm-bottom-sheet-bottom-anchored-content';
+
+export const resolveBottomAnchoredContent = (
+  platform: typeof Platform.OS,
+  content: ReactNode,
+  iosContent: ReactNode
+) => {
+  if (platform !== 'ios' && platform !== 'android') return null;
+  const slot = content ?? (platform === 'ios' ? iosContent : null);
+  return typeof slot === 'boolean' ? null : slot;
+};
 
 /**
  * The shape and shadow of a sheet's surface, stated in standard style
@@ -348,6 +359,12 @@ export type DetentConfig = Readonly<{
    * card. Ignored at a closed detent.
    */
   insets?: DetentInsets;
+  /**
+   * Space at the top of the visible card reserved for regular children.
+   * Clips the bottom-anchored slot in layout units without resizing its content.
+   * Interpolates between open detents and defaults to zero.
+   */
+  bottomAnchoredContentTopInset?: number;
 }>;
 
 /** A modal sheet’s detent with its options. */
@@ -383,6 +400,7 @@ type NormalizedDetent = Readonly<{
   /** The sheet's `placement` as a physical bias. The same on every detent. */
   placementBias: number;
   scrimOpacity: number;
+  bottomAnchoredContentTopInset: number;
 }>;
 
 /** The sheet-wide horizontal layout, carried on every native detent. */
@@ -514,6 +532,17 @@ const normalizeDetent = (
   const { kind, value } = parseDetentValue(config.value, index);
   const isClosed = isNormalizedDetentClosed({ kind, value });
   const insets = resolveDetentInsets(config.insets, index, isRTL);
+  const anchorInset = isClosed
+    ? 0
+    : (config.bottomAnchoredContentTopInset ?? 0);
+  if (!isFiniteNonNegative(anchorInset)) {
+    throw invalidDetentOptionError(
+      'bottomAnchoredContentTopInset',
+      anchorInset,
+      index,
+      'a finite, non-negative number'
+    );
+  }
   // Only a modal sheet has a scrim, so an inline sheet ignores the option
   // rather than validating it.
   const scrimOpacity =
@@ -534,6 +563,7 @@ const normalizeDetent = (
     widestCard: false,
     ...cardLayout,
     scrimOpacity,
+    bottomAnchoredContentTopInset: anchorInset,
   };
 };
 
