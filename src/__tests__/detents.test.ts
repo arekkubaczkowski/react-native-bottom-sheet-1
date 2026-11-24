@@ -22,7 +22,30 @@ beforeAll(async () => {
   ({ resolvePlacement } = await import('../cardPlacement'));
 });
 
+const normalize = (detents: Parameters<typeof normalizeDetents>[0]) =>
+  normalizeDetents(
+    detents,
+    0,
+    { maxWidth: 0, placementBias: 0.5 },
+    true,
+    false
+  );
+
 describe('normalizeDetents', () => {
+  test('serializes the native anchor clip at open detents', () => {
+    const detents = normalize([
+      { value: 0, bottomAnchoredContentTopInset: 999 },
+      { value: '50%', bottomAnchoredContentTopInset: 56 },
+      { value: '100%', bottomAnchoredContentTopInset: 104 },
+    ]);
+    expect(detents.map((d) => d.bottomAnchoredContentTopInset)).toEqual([
+      0, 56, 104,
+    ]);
+    expect(() =>
+      normalize([{ value: '50%', bottomAnchoredContentTopInset: -1 }])
+    ).toThrow('bottomAnchoredContentTopInset');
+  });
+
   test('carries maxWidth and placement on every detent, the closed one too', () => {
     const detents = normalizeDetents(
       [0, { value: 300, insets: { left: 16, right: 16 } }, '100%'],
@@ -55,15 +78,6 @@ describe('normalizeDetents', () => {
 });
 
 describe('detent corner radius', () => {
-  const normalize = (detents: Parameters<typeof normalizeDetents>[0]) =>
-    normalizeDetents(
-      detents,
-      0,
-      { maxWidth: 0, placementBias: 0.5 },
-      true,
-      false
-    );
-
   test('preserves a zero override and ignores the option while closed', () => {
     const detents = normalize([
       { value: 0, cornerRadius: -1, cornerRadiusTransitionDistance: -1 },

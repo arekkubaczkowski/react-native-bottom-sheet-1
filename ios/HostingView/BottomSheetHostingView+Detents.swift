@@ -348,7 +348,7 @@ extension BottomSheetHostingView {
 
   /// Only the regular children can determine a content-sized detent.
   func findContentView() -> UIView? {
-    clipContainer.subviews.first { $0 !== surfaceView && $0 !== bottomAnchoredContentView }
+    cardContentViews.first { $0 !== surfaceView && $0 !== bottomAnchoredContentView }
   }
 
   private func findContentHeightMarker() -> UIView? {

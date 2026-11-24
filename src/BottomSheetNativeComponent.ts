@@ -34,6 +34,7 @@ type NativeDetent = Readonly<{
   cornerRadius: CodegenTypes.Double;
   // 0 blends over the entire interval.
   cornerRadiusTransitionDistance: CodegenTypes.Double;
+  bottomAnchoredContentTopInset: CodegenTypes.Double;
 }>;
 
 export interface NativeProps extends ViewProps {

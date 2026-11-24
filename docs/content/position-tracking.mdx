@@ -118,6 +118,11 @@ it, so a list inside keeps the same viewport size during motion. The sheet lays
 out its regular children above the slot in the drawing order and uses those
 children to measure a `'content'` detent.
 
+If regular children contain a header, set `bottomAnchoredContentTopInset` on
+each open detent to reserve its height. The native clip interpolates between
+detents on the same clock as the card. The anchored content keeps its layout
+height.
+
 ```tsx
 <BottomSheet
   detents={[0, '50%', '100%']}

@@ -269,10 +269,34 @@ extension BottomSheetHostingView {
       layer.shadowPath = cardPath(in: rect, radii: radii, outset: shadow.spreadDistance)
       (layer.mask as? CAShapeLayer)?.path = shadowMaskPath(in: rect, radii: radii, for: shadow)
     }
-    for view in clipContainer.subviews {
+    if bottomAnchoredContentView != nil {
+      let anchor = bottomAnchorBounds(in: rect, position: position)
+      bottomAnchorViewport.layer.bounds = anchor
+      bottomAnchorViewport.layer.position = anchor.origin
+    }
+    for view in cardContentViews {
       view.layer.transform = contentTransform(of: view, in: rect)
     }
     CATransaction.commit()
+  }
+
+  func bottomAnchorBounds(in card: CGRect, position: CGFloat) -> CGRect {
+    let position = max(position, firstOpenDetentPosition)
+    let topInset = bottomAnchorInset(at: position) * contentScale(forCardWidth: card.width)
+    let top = min(topInset, card.height)
+    return CGRect(x: card.minX, y: card.minY + top, width: card.width, height: card.height - top)
+  }
+
+  private func bottomAnchorInset(at position: CGFloat) -> CGFloat {
+    guard bottomAnchorTopInsets.count == detentSpecs.count,
+          let last = bottomAnchorTopInsets.last else { return 0 }
+    guard let next = detentSpecs.firstIndex(where: { position < $0.position }) else { return last }
+    guard next > 0 else { return bottomAnchorTopInsets[next] }
+    let lower = detentSpecs[next - 1].position
+    let upper = detentSpecs[next].position
+    let fraction = (position - lower) / (upper - lower)
+    let start = bottomAnchorTopInsets[next - 1]
+    return start + (bottomAnchorTopInsets[next] - start) * fraction
   }
 
   func childToSheet(_ child: UIView, card: CGRect) -> CGAffineTransform {
@@ -428,6 +452,19 @@ extension BottomSheetHostingView {
       keyframes("position", rects.map { NSValue(cgPoint: $0.origin) }),
       forKey: Self.cardPositionAnimationKey
     )
+    if bottomAnchoredContentView != nil {
+      let anchors = zip(rects, samples).map {
+        bottomAnchorBounds(in: $0.0, position: sheetContainerHeight - $0.1)
+      }
+      bottomAnchorViewport.layer.add(
+        keyframes("bounds", anchors.map { NSValue(cgRect: $0) }),
+        forKey: Self.cardBoundsAnimationKey
+      )
+      bottomAnchorViewport.layer.add(
+        keyframes("position", anchors.map { NSValue(cgPoint: $0.origin) }),
+        forKey: Self.cardPositionAnimationKey
+      )
+    }
     addContentAnimation()
     if let animatedCornerIndex {
       clipContainer.layer.add(
@@ -466,7 +503,7 @@ extension BottomSheetHostingView {
     }
     let rects = cardRects(forSamples: samples)
     contentAnimationLayouts = currentContentLayouts
-    for view in clipContainer.subviews where hasCardGaps || view === bottomAnchoredContentView {
+    for view in cardContentViews where hasCardGaps || view === bottomAnchoredContentView {
       view.layer.add(
         Self.cardKeyframes(
           "transform",
@@ -481,7 +518,8 @@ extension BottomSheetHostingView {
   func refreshCardAnimations() {
     guard let animation = cardSettleAnimation else { return }
     if animatedWidth != sheetContainer.bounds.width || animatedBias != cardPlacementBias
-      || animatedMaxWidth != cardMaxWidth || isContentAnimationStale {
+      || animatedMaxWidth != cardMaxWidth || isContentAnimationStale
+    {
       removeCardAnimations()
       addCardAnimations(matching: animation)
     }
@@ -496,7 +534,7 @@ extension BottomSheetHostingView {
   }
 
   private var currentContentLayouts: [CGRect] {
-    clipContainer.subviews.map { CGRect(origin: $0.center, size: $0.bounds.size) }
+    cardContentViews.map { CGRect(origin: $0.center, size: $0.bounds.size) }
   }
 
   private func cardRects(forSamples samples: [CGFloat]) -> [CGRect] {
@@ -531,7 +569,9 @@ extension BottomSheetHostingView {
     clipContainer.layer.removeAnimation(forKey: Self.cardBoundsAnimationKey)
     clipContainer.layer.removeAnimation(forKey: Self.cardPositionAnimationKey)
     clipContainer.layer.removeAnimation(forKey: Self.cardCornerRadiusAnimationKey)
-    clipContainer.subviews.forEach { $0.layer.removeAnimation(forKey: Self.cardContentAnimationKey) }
+    bottomAnchorViewport.layer.removeAnimation(forKey: Self.cardBoundsAnimationKey)
+    bottomAnchorViewport.layer.removeAnimation(forKey: Self.cardPositionAnimationKey)
+    cardContentViews.forEach { $0.layer.removeAnimation(forKey: Self.cardContentAnimationKey) }
     cardMask?.removeAnimation(forKey: Self.cardMaskAnimationKey)
     for layer in shadowLayers {
       layer.removeAnimation(forKey: Self.cardShadowAnimationKey)

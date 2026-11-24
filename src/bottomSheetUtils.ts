@@ -359,6 +359,12 @@ export type DetentConfig = Readonly<{
    * interval. New radii follow the same curve as the sheet surface.
    */
   cornerRadiusTransitionDistance?: number;
+  /**
+   * Space at the top of the visible card reserved for regular children on iOS.
+   * Clips the bottom-anchored slot in layout units without resizing its content.
+   * Interpolates between open detents and defaults to zero.
+   */
+  bottomAnchoredContentTopInset?: number;
 }>;
 
 /** A modal sheet’s detent with its options. */
@@ -398,6 +404,7 @@ type NormalizedDetent = Readonly<{
   cornerRadius: number;
   /** 0 blends over the entire interval. */
   cornerRadiusTransitionDistance: number;
+  bottomAnchoredContentTopInset: number;
 }>;
 
 /** The sheet-wide horizontal layout, carried on every native detent. */
@@ -552,6 +559,17 @@ const normalizeDetent = (
       'a finite, positive number'
     );
   }
+  const anchorInset = isClosed
+    ? 0
+    : (config.bottomAnchoredContentTopInset ?? 0);
+  if (!isFiniteNonNegative(anchorInset)) {
+    throw invalidDetentOptionError(
+      'bottomAnchoredContentTopInset',
+      anchorInset,
+      index,
+      'a finite, non-negative number'
+    );
+  }
   // Only a modal sheet has a scrim, so an inline sheet ignores the option
   // rather than validating it.
   const scrimOpacity =
@@ -574,6 +592,7 @@ const normalizeDetent = (
     scrimOpacity,
     cornerRadius: radius ?? -1,
     cornerRadiusTransitionDistance: distance ?? 0,
+    bottomAnchoredContentTopInset: anchorInset,
   };
 };
 

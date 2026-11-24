@@ -119,6 +119,7 @@ using namespace facebook::react;
         @"scrimOpacity": @(detent.scrimOpacity),
         @"cornerRadius": @(detent.cornerRadius),
         @"cornerRadiusTransitionDistance": @(detent.cornerRadiusTransitionDistance),
+        @"bottomAnchoredContentTopInset": @(detent.bottomAnchoredContentTopInset),
       }];
     }
     [_sheetView setDetents:detentsArray];
