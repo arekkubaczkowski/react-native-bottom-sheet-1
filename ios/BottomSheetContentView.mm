@@ -160,6 +160,11 @@
   [_impl setSurfaceShadows:shadows];
 }
 
+- (CGFloat)currentCardLeft
+{
+  return _impl.currentCardLeft;
+}
+
 - (CGFloat)currentContentOffsetX
 {
   return _impl.currentContentOffsetX;

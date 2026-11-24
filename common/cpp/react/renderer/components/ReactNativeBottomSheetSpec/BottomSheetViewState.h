@@ -60,6 +60,7 @@ class BottomSheetViewState final {
   float contentOffsetY{0};
   float contentScale{1};
   // The iOS anchored wrapper uses the visible edge for its measured offset.
+  Float cardLeft{0};
   Float cardHeight{0};
   // Real measured size (dp) of the sheet in its window, reported natively once
   // it lays out. Consumed by the component descriptor only in window-overlay

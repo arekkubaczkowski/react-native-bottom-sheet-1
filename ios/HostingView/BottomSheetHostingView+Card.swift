@@ -111,6 +111,10 @@ extension BottomSheetHostingView {
     return cardRect(forPosition: currentSheetHeight).height
   }
 
+  public var currentCardLeft: CGFloat {
+    cardRect(forPosition: currentSheetHeight).minX
+  }
+
   /// The sheet coordinate space's horizontal displacement, which the scale applies
   /// to as well: it puts the widest card's left edge, scaled, on the card's.
   public var currentContentOffsetX: CGFloat {
@@ -245,6 +249,16 @@ extension BottomSheetHostingView {
     CATransaction.commit()
   }
 
+  func childToSheet(_ child: UIView, card: CGRect) -> CGAffineTransform {
+    let transform = contentTransform(of: child, in: card)
+    let bounds = child.bounds
+    return CGAffineTransform(
+      a: transform.m11, b: 0, c: 0, d: transform.m22,
+      tx: child.center.x + transform.m41 - transform.m11 * bounds.midX,
+      ty: child.center.y + transform.m42 - transform.m22 * bounds.midY
+    )
+  }
+
   /// Fits a child to the card's width and pins it to its chosen vertical edge.
   private func contentTransform(of contentView: UIView, in rect: CGRect) -> CATransform3D {
     let anchorsToBottom = contentView === bottomAnchoredContentView
@@ -253,7 +267,7 @@ extension BottomSheetHostingView {
     // The layer scales about its center, which Fabric's layout owns.
     let center = contentView.center
     let size = contentView.bounds.size
-    let dx = hasCardGaps ? rect.minX - (center.x - scale * size.width / 2) : 0
+    let dx = hasCardGaps || anchorsToBottom ? rect.minX - (center.x - scale * size.width / 2) : 0
     let dy = anchorsToBottom
       ? bottomAnchorTranslation(
         cardBottom: rect.maxY, centerY: center.y, height: size.height, scale: scale
@@ -355,6 +369,9 @@ extension BottomSheetHostingView {
   /// sheet's settle animation, so the card's height follows the sheet frame
   /// for frame on the render server.
   func addCardAnimations(matching sheetAnimation: CAKeyframeAnimation) {
+    animatedWidth = sheetContainer.bounds.width
+    animatedBias = cardPlacementBias
+    animatedMaxWidth = cardMaxWidth
     cardSettleAnimation = sheetAnimation
     // A plain card only needs keyframes when something follows its edge.
     guard isCardShaped || !cardShadows.isEmpty || bottomAnchoredContentView != nil else { return }
@@ -417,7 +434,16 @@ extension BottomSheetHostingView {
     }
   }
 
-  var isContentAnimationStale: Bool {
+  func refreshCardAnimations() {
+    guard let animation = cardSettleAnimation else { return }
+    if animatedWidth != sheetContainer.bounds.width || animatedBias != cardPlacementBias
+      || animatedMaxWidth != cardMaxWidth || isContentAnimationStale {
+      removeCardAnimations()
+      addCardAnimations(matching: animation)
+    }
+  }
+
+  private var isContentAnimationStale: Bool {
     guard
       hasCardGaps || bottomAnchoredContentView != nil,
       cardSettleAnimation != nil
@@ -454,6 +480,10 @@ extension BottomSheetHostingView {
     cardSettleAnimation = nil
     contentAnimationLayouts = []
     sheetContainer.layer.removeAnimation(forKey: Self.springAnimationKey)
+    removeCardAnimations()
+  }
+
+  private func removeCardAnimations() {
     clipContainer.layer.removeAnimation(forKey: Self.cardBoundsAnimationKey)
     clipContainer.layer.removeAnimation(forKey: Self.cardPositionAnimationKey)
     clipContainer.subviews.forEach { $0.layer.removeAnimation(forKey: Self.cardContentAnimationKey) }

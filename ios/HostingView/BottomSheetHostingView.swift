@@ -219,6 +219,9 @@ public final class BottomSheetHostingView: UIView {
   static let cardContentAnimationKey = "bottomSheetCardContent"
   /// The settle animation the card is following, kept so the content's keyframes
   /// can be rebuilt when a layout moves the content mid-settle.
+  var animatedWidth: CGFloat = 0
+  var animatedBias: CGFloat = 0
+  var animatedMaxWidth: CGFloat = 0
   var cardSettleAnimation: CAKeyframeAnimation?
   /// The centers and sizes that the running content keyframes were built from.
   var contentAnimationLayouts: [CGRect] = []
@@ -360,6 +363,8 @@ public final class BottomSheetHostingView: UIView {
     // presented geometry and the model already holds the target.
     applyCardGeometry(forPosition: maxHeight - sheetContainer.transform.ty)
 
+    refreshCardAnimations()
+
     // Report fresh native geometry so the component layer can push the content
     // wrapper's target size (and the overlay frame) into the shadow tree.
     eventDelegate?.bottomSheetHostingViewDidLayout(self)
@@ -400,11 +405,14 @@ public final class BottomSheetHostingView: UIView {
     updateScrim()
   }
 
-  /// The card as it is drawn, in host coordinates. Mid-settle the translation
-  /// comes from the spring instead of the presentation layer, which lags one
-  /// commit behind right after a snap starts. The container's transform is
-  /// translation-only.
+  /// Use the rendered clip when available. Before Core Animation publishes
+  /// its first presentation tree, reconstruct it from the settle clock.
   var presentedCardFrame: CGRect {
+    if activeSpring != nil, clipContainer.layer.animation(forKey: Self.cardBoundsAnimationKey) != nil,
+       let clip = clipContainer.layer.presentation(),
+       let host = layer.presentation() {
+      return clip.convert(clip.bounds, to: host)
+    }
     let ty = currentTranslationY
     let size = sheetContainer.bounds.size
     let center = sheetContainer.center
@@ -441,9 +449,33 @@ public final class BottomSheetHostingView: UIView {
       return scrimView.hitTest(scrimPoint, with: event)
     }
 
+    if activeSpring != nil {
+      return presentedTarget(at: point, event: event)
+    }
     let containerPoint = convert(point, to: sheetContainer)
     guard sheetContainer.bounds.contains(containerPoint) else { return nil }
     return sheetContainer.hitTest(containerPoint, with: event)
+  }
+
+  func presentedTarget(at point: CGPoint, event: UIEvent?) -> UIView? {
+    let ty = currentTranslationY
+    let card = cardRect(forPosition: sheetContainerHeight - ty)
+    let local = CGPoint(x: point.x - sheetContainer.center.x + sheetContainer.bounds.midX,
+                        y: point.y - sheetContainer.center.y + sheetContainer.bounds.midY - ty)
+    guard presentedCardContains(point) else { return nil }
+    let disabled = isContentInteractionDisabled
+    if disabled { setContentInteractionEnabled(true) }
+    defer { if disabled { setContentInteractionEnabled(false) } }
+    for child in clipContainer.subviews.reversed() {
+      if let host = layer.presentation(), let rendered = child.layer.presentation() {
+        if let hit = child.hitTest(rendered.convert(point, from: host), with: event) { return hit }
+        continue
+      }
+      let transform = childToSheet(child, card: card)
+      guard transform.a > 0 else { continue }
+      if let hit = child.hitTest(local.applying(transform.inverted()), with: event) { return hit }
+    }
+    return sheetContainer
   }
 
   public func setDetents(_ raw: [NSDictionary]) {
@@ -506,6 +538,7 @@ public final class BottomSheetHostingView: UIView {
       isContentRegionChangePending = true
     }
     refreshDetentsFromLayout()
+    refreshCardAnimations()
     // Set once the detents are re-resolved, so the scrim isn’t repainted
     // against the previous ones.
     scrimOpacities = entries.map { CGFloat(truncating: $0["scrimOpacity"] as? NSNumber ?? 1) }

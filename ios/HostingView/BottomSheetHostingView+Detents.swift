@@ -341,9 +341,7 @@ extension BottomSheetHostingView {
     // So does a running settle's copy of it: the settle usually starts before
     // the layout of the same transaction lands. Commits run per frame, so only
     // rebuild it when the content actually moved.
-    if isContentAnimationStale {
-      addContentAnimation()
-    }
+    refreshCardAnimations()
     guard isContentRegionChangePending else { return }
     refreshDetentsFromLayout()
   }

@@ -56,6 +56,7 @@ using namespace facebook::react;
 @implementation BottomSheetComponentView {
   BottomSheetContentView *_sheetView;
   State::Shared _sheetState;
+  float _lastCardLeft;
   float _lastContentOffsetX;
   float _lastContentOffsetY;
   float _lastContentScale;
@@ -427,6 +428,7 @@ using namespace facebook::react;
   }
   updateBottomSheetState(
       _sheetState,
+      _lastCardLeft,
       _lastContentOffsetX,
       _lastContentOffsetY,
       _lastContentScale,
@@ -541,14 +543,16 @@ using namespace facebook::react;
 /// remains to be applied here.
 - (void)pushContentGeometry
 {
+  float cardLeft = static_cast<float>(_sheetView.currentCardLeft);
   float contentOffsetX = static_cast<float>(_sheetView.currentContentOffsetX);
   float contentOffsetY = static_cast<float>(_sheetView.currentContentOffsetY);
   float contentScale = static_cast<float>(_sheetView.currentContentScale);
   float cardHeight = static_cast<float>(_sheetView.currentCardHeightForBottomAnchor);
-  if (contentOffsetX == _lastContentOffsetX && contentOffsetY == _lastContentOffsetY
+  if (cardLeft == _lastCardLeft && contentOffsetX == _lastContentOffsetX && contentOffsetY == _lastContentOffsetY
       && contentScale == _lastContentScale && cardHeight == _lastCardHeightForBottomAnchor) {
     return;
   }
+  _lastCardLeft = cardLeft;
   _lastContentOffsetX = contentOffsetX;
   _lastContentOffsetY = contentOffsetY;
   _lastContentScale = contentScale;
@@ -584,6 +588,7 @@ using namespace facebook::react;
   _needsIndexSyncAfterRecycle = YES;
   [_sheetView resetSheetState];
   _sheetState.reset();
+  _lastCardLeft = 0;
   _lastContentOffsetX = 0;
   _lastContentOffsetY = 0;
   _lastContentScale = 1;
