@@ -1,0 +1,1 @@
+{"version":3,"names":["BottomSheetView","BottomSheetSurfaceView","View","BottomSheetContentWrapperView","BottomSheetPortalHostView"],"sourceRoot":"../../src","sources":["BottomSheetHostViews.web.ts"],"mappings":";;AAAA,SACEA,eAAe,EACfC,sBAAsB,QACjB,6BAA0B;AACjC;AACA;AACA,SACEC,IAAI,IAAIC,6BAA6B,EACrCD,IAAI,IAAIE,yBAAyB,QAC5B,cAAc","ignoreList":[]}

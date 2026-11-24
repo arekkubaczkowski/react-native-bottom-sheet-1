@@ -1,0 +1,1 @@
+{"version":3,"file":"closeRequest.d.ts","sourceRoot":"","sources":["../../../../src/web/closeRequest.ts"],"names":[],"mappings":"AAEA,MAAM,MAAM,kBAAkB,GAAG;IAC/B;;;OAGG;IACH,QAAQ,CAAC,oBAAoB,EAAE,OAAO,CAAC;IACvC,kBAAkB,IAAI,IAAI,CAAC;CAC5B,CAAC;AA8DF;;;GAGG;AACH,eAAO,MAAM,6BAA6B,GAAI,QAAQ,kBAAkB,SAKvE,CAAC;AAEF,eAAO,MAAM,2BAA2B,GACtC,QAAQ,kBAAkB,EAC1B,cAAc,OAAO,SAetB,CAAC"}
