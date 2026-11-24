@@ -98,7 +98,10 @@ extension BottomSheetHostingView {
     // find out why exactly. This approach however gives better results
     // than lagging one frame behind.
     let frameDuration = link.targetTimestamp - link.timestamp
-    stepSpring(targetTime: link.targetTimestamp + Self.followerPredictionBiasFrames * frameDuration)
+    stepSpring(
+      targetTime: link.targetTimestamp + Self.followerPredictionBiasFrames * frameDuration,
+      nextFrameTime: link.targetTimestamp
+    )
   }
 
   func snapToIndex(
@@ -213,11 +216,15 @@ extension BottomSheetHostingView {
     )
   }
 
-  private func stepSpring(targetTime: CFTimeInterval) {
+  private func stepSpring(targetTime: CFTimeInterval, nextFrameTime: CFTimeInterval) {
     guard let spring = activeSpring else { return }
     let ty = spring.value(at: targetTime)
     refitScrollIndicators(atTranslation: ty)
-    emitPosition(overrideTy: ty)
+    emitPosition(
+      overrideTy: ty,
+      geometrySampleTy: spring.value(at: nextFrameTime),
+      frameTimestamp: nextFrameTime
+    )
   }
 
   private func finishSpring() {

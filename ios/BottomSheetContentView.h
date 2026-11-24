@@ -9,7 +9,9 @@ NS_ASSUME_NONNULL_BEGIN
 - (void)bottomSheetView:(BottomSheetContentView *)view didSettle:(NSInteger)index;
 - (void)bottomSheetView:(BottomSheetContentView *)view
       didChangePosition:(CGFloat)position
-                  index:(CGFloat)index;
+                  index:(CGFloat)index
+             cardBottom:(CGFloat)cardBottom
+         frameTimestamp:(CFTimeInterval)frameTimestamp;
 - (void)bottomSheetView:(BottomSheetContentView *)view didReportError:(NSString *)message;
 // Fired after each layout pass with fresh native geometry, so the component
 // layer can push the content wrapper's target size (and, in overlay mode, the

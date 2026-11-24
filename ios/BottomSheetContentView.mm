@@ -223,8 +223,12 @@
 - (void)bottomSheetHostingView:(BottomSheetHostingView *)view
               didChangePosition:(CGFloat)position
                           index:(CGFloat)index
+                     cardBottom:(CGFloat)cardBottom
+                 frameTimestamp:(CFTimeInterval)frameTimestamp
 {
-  [self.delegate bottomSheetView:self didChangePosition:position index:index];
+  [self.delegate bottomSheetView:self didChangePosition:position index:index
+                       cardBottom:cardBottom
+                   frameTimestamp:frameTimestamp];
 }
 
 - (void)bottomSheetHostingView:(BottomSheetHostingView *)view didReportError:(NSString *)message

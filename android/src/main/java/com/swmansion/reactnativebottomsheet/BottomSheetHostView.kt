@@ -28,7 +28,14 @@ interface BottomSheetViewListener {
 
   fun onSettle(index: Int)
 
-  fun onPositionChange(position: Double, index: Double)
+  fun onPositionChange(position: Double, index: Double) = Unit
+
+  fun onPositionChange(
+    position: Double,
+    index: Double,
+    cardBottom: Double,
+    frameTimestamp: Double,
+  ) = onPositionChange(position, index)
 
   fun onCloseRequest()
 }

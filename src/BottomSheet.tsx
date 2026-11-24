@@ -69,6 +69,14 @@ export type PositionChangeEventData = Readonly<{
    * animation can be driven without knowing the sheet's height.
    */
   index: number;
+  /**
+   * The bottom edge of the native card relative to the top of its host,
+   * in points on iOS or dp on Android. On iOS during a settle it is sampled
+   * at the display link's target time. On Android it is the applied geometry.
+   */
+  cardBottom?: number;
+  /** The card geometry sample time in milliseconds on the platform's monotonic clock. */
+  frameTimestamp?: number;
 }>;
 
 export type ScrollCoordinationMode = 'none' | 'initial' | 'handoff';

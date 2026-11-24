@@ -4,7 +4,8 @@ import UIKit
   func bottomSheetHostingView(_ view: BottomSheetHostingView, didChangeIndex index: Int)
   func bottomSheetHostingView(_ view: BottomSheetHostingView, didSettle index: Int)
   func bottomSheetHostingView(
-    _ view: BottomSheetHostingView, didChangePosition position: CGFloat, index: CGFloat
+    _ view: BottomSheetHostingView, didChangePosition position: CGFloat, index: CGFloat,
+    cardBottom: CGFloat, frameTimestamp: CFTimeInterval
   )
   func bottomSheetHostingView(_ view: BottomSheetHostingView, didReportError message: String)
   /// Fired after each layout pass with fresh native geometry, so the component
@@ -362,7 +363,7 @@ public final class BottomSheetHostingView: UIView {
     // wrapper's target size (and the overlay frame) into the shadow tree.
     eventDelegate?.bottomSheetHostingViewDidLayout(self)
 
-    if !hasLaidOut && !detentSpecs.isEmpty {
+    if !hasLaidOut, !detentSpecs.isEmpty {
       let indexToApply = pendingIndex ?? targetIndex
       let clampedIndex = max(0, min(detentSpecs.count - 1, indexToApply))
 
@@ -677,16 +678,31 @@ public final class BottomSheetHostingView: UIView {
 
   /// `overrideTy` is the spring's predicted translationY for the upcoming frame
   /// (passed during a settle). Without it we read the current on-screen value.
-  func emitPosition(overrideTy: CGFloat? = nil) {
+  func emitPosition(
+    overrideTy: CGFloat? = nil,
+    geometrySampleTy: CGFloat? = nil,
+    frameTimestamp: CFTimeInterval = CACurrentMediaTime()
+  ) {
     let maxHeight = sheetContainerHeight
     let ty = overrideTy ?? currentTranslationY
     let position = maxHeight - ty
     updateScrim(forPosition: position)
     updateSheetVisibility(forPosition: position)
     updateInteractionState()
-    eventDelegate?.bottomSheetHostingView(
-      self, didChangePosition: position, index: detentIndex(forPosition: position)
-    )
+    if let eventDelegate {
+      eventDelegate.bottomSheetHostingView(
+        self, didChangePosition: position, index: detentIndex(forPosition: position),
+        cardBottom: cardBottomInHost(forTranslation: geometrySampleTy ?? ty),
+        frameTimestamp: frameTimestamp * 1000
+      )
+    }
+  }
+
+  private func cardBottomInHost(forTranslation ty: CGFloat) -> CGFloat {
+    let height = sheetContainer.bounds.height
+    let origin = sheetContainer.center.y - height / 2
+    let card = cardRect(forPosition: sheetContainerHeight - ty)
+    return origin + ty + card.maxY
   }
 
   func startDisplayLink() {
