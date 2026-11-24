@@ -45,8 +45,16 @@ std::shared_ptr<const ShadowNode> BottomSheetViewShadowNode::withCardGeometry(
       content->kind() == BottomSheetCardContent::Kind::Surface
       ? state.surfaceOverflow
       : std::max<Float>(-state.contentRegionInset, 0);
+  const bool anchored = content->isBottomAnchored();
+  const auto cardBottom =
+      anchored ? std::optional<Float>(state.cardHeight) : std::nullopt;
+  // The absolute slot is sized to the same maximum content region as the
+  // in-flow wrapper. Yoga's absolute offsets don't consume parent padding.
+  if (anchored) {
+    bottomOverflow = -state.contentRegionInset;
+  }
   if (content->hasCardGeometry(
-          state.contentOffsetX, state.contentScale, bottomOverflow)) {
+          state.contentOffsetX, state.contentScale, bottomOverflow, cardBottom)) {
     return child;
   }
   // Props, state and layout stay shared, so the mounting layer sees no change,
@@ -56,7 +64,7 @@ std::shared_ptr<const ShadowNode> BottomSheetViewShadowNode::withCardGeometry(
   }
   auto clone = child->clone({});
   bottomSheetCardContentOf(*clone)->setCardGeometry(
-      state.contentOffsetX, state.contentScale, bottomOverflow);
+      state.contentOffsetX, state.contentScale, bottomOverflow, cardBottom);
   return clone;
 }
 
@@ -80,6 +88,7 @@ void updateBottomSheetState(
     float contentOffsetX,
     float contentOffsetY,
     float contentScale,
+    Float cardHeight,
     Size frameSize,
     Float contentRegionInset,
     Float surfaceOverflow) {
@@ -87,7 +96,8 @@ void updateBottomSheetState(
       std::static_pointer_cast<const BottomSheetViewShadowNode::ConcreteState>(
           state);
   concreteState->updateState(
-      [contentOffsetX, contentOffsetY, contentScale, frameSize, contentRegionInset, surfaceOverflow](
+      [contentOffsetX, contentOffsetY, contentScale, cardHeight, frameSize,
+       contentRegionInset, surfaceOverflow](
           const BottomSheetViewState& /*oldState*/)
           -> BottomSheetViewShadowNode::ConcreteState::SharedData {
         // Every field is set: updates coalesce by wholesale replacement (see
@@ -97,6 +107,7 @@ void updateBottomSheetState(
         mutableState.contentOffsetX = contentOffsetX;
         mutableState.contentOffsetY = contentOffsetY;
         mutableState.contentScale = contentScale;
+        mutableState.cardHeight = cardHeight;
         mutableState.frameSize = frameSize;
         mutableState.contentRegionInset = contentRegionInset;
         mutableState.surfaceOverflow = surfaceOverflow;

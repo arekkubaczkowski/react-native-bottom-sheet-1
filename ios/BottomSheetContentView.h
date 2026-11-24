@@ -65,6 +65,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (CGFloat)currentContentOffsetX;
 - (CGFloat)currentContentOffsetY;
 - (CGFloat)currentContentScale;
+- (CGFloat)currentCardHeightForBottomAnchor;
 - (void)mountChildComponentView:(UIView *)childView atIndex:(NSInteger)index;
 - (void)unmountChildComponentView:(UIView *)childView;
 - (void)mountSurfaceComponentView:(UIView *)surfaceView atIndex:(NSInteger)index;

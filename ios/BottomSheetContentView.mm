@@ -175,6 +175,11 @@
   return _impl.currentContentScale;
 }
 
+- (CGFloat)currentCardHeightForBottomAnchor
+{
+  return _impl.currentCardHeightForBottomAnchor;
+}
+
 - (BOOL)isModalAccessibilityActive
 {
   return _impl.isModalAccessibilityActive;

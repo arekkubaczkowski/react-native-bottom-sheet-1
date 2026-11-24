@@ -59,6 +59,7 @@ using namespace facebook::react;
   float _lastContentOffsetX;
   float _lastContentOffsetY;
   float _lastContentScale;
+  float _lastCardHeightForBottomAnchor;
   BOOL _needsIndexSyncAfterRecycle;
   BOOL _windowOverlay;
   NSInteger _openOrder;
@@ -429,6 +430,7 @@ using namespace facebook::react;
       _lastContentOffsetX,
       _lastContentOffsetY,
       _lastContentScale,
+      _lastCardHeightForBottomAnchor,
       {static_cast<Float>(_lastGeometryFrameSize.width),
        static_cast<Float>(_lastGeometryFrameSize.height)},
       isnan(_lastGeometryInset) ? 0 : static_cast<Float>(_lastGeometryInset),
@@ -542,13 +544,15 @@ using namespace facebook::react;
   float contentOffsetX = static_cast<float>(_sheetView.currentContentOffsetX);
   float contentOffsetY = static_cast<float>(_sheetView.currentContentOffsetY);
   float contentScale = static_cast<float>(_sheetView.currentContentScale);
+  float cardHeight = static_cast<float>(_sheetView.currentCardHeightForBottomAnchor);
   if (contentOffsetX == _lastContentOffsetX && contentOffsetY == _lastContentOffsetY
-      && contentScale == _lastContentScale) {
+      && contentScale == _lastContentScale && cardHeight == _lastCardHeightForBottomAnchor) {
     return;
   }
   _lastContentOffsetX = contentOffsetX;
   _lastContentOffsetY = contentOffsetY;
   _lastContentScale = contentScale;
+  _lastCardHeightForBottomAnchor = cardHeight;
   [self pushStateSnapshot];
 }
 
@@ -583,6 +587,7 @@ using namespace facebook::react;
   _lastContentOffsetX = 0;
   _lastContentOffsetY = 0;
   _lastContentScale = 1;
+  _lastCardHeightForBottomAnchor = 0;
   _lastGeometryFrameSize = CGSizeZero;
   _lastGeometryInset = NAN;
   _lastGeometrySurfaceOverflow = 0;

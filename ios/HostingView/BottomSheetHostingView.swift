@@ -138,6 +138,7 @@ public final class BottomSheetHostingView: UIView {
 
   public let sheetContainer = UIView()
   let clipContainer = CardClipView()
+  weak var bottomAnchoredContentView: UIView?
   /// Casts the card's shadows. A sibling below the clipping container, so the
   /// clip never cuts the shadows.
   let shadowView = UIView()
@@ -188,6 +189,7 @@ public final class BottomSheetHostingView: UIView {
   // content wrapper. Mirrored in `bottomSheetUtils.ts` and `BottomSheetHostView.kt`;
   // keep the three in sync.
   static let contentHeightMarkerNativeID = "swm-bottom-sheet-content-height-marker"
+  static let bottomAnchoredContentNativeID = "swm-bottom-sheet-bottom-anchored-content"
   var contentHeightMarker: UIView?
   weak var surfaceView: UIView?
   static var markerObservationContext = 0
@@ -362,7 +364,7 @@ public final class BottomSheetHostingView: UIView {
     // wrapper's target size (and the overlay frame) into the shadow tree.
     eventDelegate?.bottomSheetHostingViewDidLayout(self)
 
-    if !hasLaidOut && !detentSpecs.isEmpty {
+    if !hasLaidOut, !detentSpecs.isEmpty {
       let indexToApply = pendingIndex ?? targetIndex
       let clampedIndex = max(0, min(detentSpecs.count - 1, indexToApply))
 
@@ -600,11 +602,22 @@ public final class BottomSheetHostingView: UIView {
 
   public func mountChildComponentView(_ childView: UIView, atIndex index: Int) {
     clipContainer.insertSubview(childView, at: index)
+    if nativeID(of: childView) == Self.bottomAnchoredContentNativeID {
+      bottomAnchoredContentView = childView
+      clipContainer.clipsToBounds = true
+      if let cardSettleAnimation {
+        addCardAnimations(matching: cardSettleAnimation)
+      }
+    }
     refreshContentHeightMarker()
     setNeedsLayout()
   }
 
   public func unmountChildComponentView(_ childView: UIView) {
+    if bottomAnchoredContentView === childView {
+      bottomAnchoredContentView = nil
+      clipContainer.clipsToBounds = isCardShaped
+    }
     // Fabric recycles the view, which must not keep the card's scale.
     childView.layer.removeAnimation(forKey: Self.cardContentAnimationKey)
     childView.layer.transform = CATransform3DIdentity
@@ -665,6 +678,8 @@ public final class BottomSheetHostingView: UIView {
     committedContentRegionInset = .nan
     appliedContentRegionInset = .nan
     surfaceView = nil
+    bottomAnchoredContentView = nil
+    clipContainer.clipsToBounds = isCardShaped
     sheetContainer.transform = .identity
     scrimView.alpha = 0
     scrimView.isHidden = true

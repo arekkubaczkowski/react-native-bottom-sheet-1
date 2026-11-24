@@ -21,6 +21,7 @@ void updateBottomSheetState(
     float contentOffsetX,
     float contentOffsetY,
     float contentScale,
+    Float cardHeight,
     Size frameSize,
     Float contentRegionInset,
     Float surfaceOverflow);
