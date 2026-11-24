@@ -221,16 +221,6 @@ public final class BottomSheetHostingView: UIView {
   /// The centers and sizes that the running content keyframes were built from.
   var contentAnimationLayouts: [CGRect] = []
 
-  /// Extra lead applied to the spring prediction when emitting follower
-  /// positions, in frames (scaled by the display link's actual frame duration,
-  /// so it means the same thing at 60Hz and 120Hz). `targetTimestamp` alone
-  /// still trails the sheet slightly: the render server's sampling phase for
-  /// the keyframe animation is undocumented, and the follower's transform
-  /// commits one runloop turn after this callback. Tune by bisecting on a
-  /// physical device: 0 = no bias, 1 = predict one extra frame ahead. Too high
-  /// and followers visibly lead the sheet at the start of a settle.
-  static let followerPredictionBiasFrames: CFTimeInterval = 1.0
-
   override public init(frame: CGRect) {
     super.init(frame: frame)
     backgroundColor = .clear
