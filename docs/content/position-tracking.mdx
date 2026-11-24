@@ -108,3 +108,30 @@ library depending on Reanimated. Pass a stable function (such as
 Inside the worklet, Reanimated unwraps the native event, so you read
 `event.position` directly rather than `event.nativeEvent.position`. The handler
 runs on the UI thread on every frame the sheet moves.
+
+## Pinning content to the bottom on iOS
+
+Use `iosBottomAnchoredContent` on `BottomSheet` or `ModalBottomSheet` for a view
+that should stay at the card's bottom edge during a drag and during the settle
+animation. The slot is laid out against the largest detent. Shorter detents clip
+it, so a list inside keeps the same viewport size during motion. The sheet lays
+out its regular children above the slot in the drawing order and uses those
+children to measure a `'content'` detent.
+
+```tsx
+<BottomSheet
+  detents={[0, '50%', '100%']}
+  index={index}
+  onIndexChange={setIndex}
+  iosBottomAnchoredContent={
+    <View style={{ flex: 1, justifyContent: 'flex-end' }}>
+      <Composer />
+    </View>
+  }
+>
+  <Header />
+</BottomSheet>
+```
+
+The example shows the iOS slot. Render a platform-specific fallback in the
+regular children when you need a composer on Android or the web.

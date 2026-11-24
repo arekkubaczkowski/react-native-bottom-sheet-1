@@ -16,6 +16,9 @@ import {
 // `BottomSheetHostView.kt`; keep the three in sync. The web host imports it.
 export const CONTENT_HEIGHT_MARKER_NATIVE_ID =
   'swm-bottom-sheet-content-height-marker';
+// Identifies the optional iOS anchor in both the native host and Fabric.
+export const BOTTOM_ANCHORED_CONTENT_NATIVE_ID =
+  'swm-bottom-sheet-bottom-anchored-content';
 
 /**
  * The shape and shadow of a sheet's surface, stated in standard style
