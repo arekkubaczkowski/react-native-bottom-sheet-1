@@ -12,7 +12,7 @@ type NativeDetent = Readonly<{
     maxWidth: CodegenTypes.Double;
     placementBias: CodegenTypes.Double;
     scrimOpacity: CodegenTypes.Double;
-    bottomAnchoredContentTopInset: CodegenTypes.Double;
+    contentClipTopInset: CodegenTypes.Double;
     cornerRadius: CodegenTypes.Double;
     cornerRadiusTransitionDistance: CodegenTypes.Double;
 }>;

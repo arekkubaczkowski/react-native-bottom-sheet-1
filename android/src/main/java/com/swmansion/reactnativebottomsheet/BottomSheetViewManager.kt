@@ -123,7 +123,7 @@ class BottomSheetViewManager :
           "insetRight" to inset("insetRight"),
           "insetBottom" to inset("insetBottom"),
           "widestCard" to (map.hasKey("widestCard") && map.getBoolean("widestCard")),
-          "bottomAnchoredContentTopInset" to inset("bottomAnchoredContentTopInset"),
+          "contentClipTopInset" to inset("contentClipTopInset"),
           "cornerRadius" to
             (if (map.hasKey("cornerRadius")) map.getDouble("cornerRadius") else -1.0),
           "cornerRadiusTransitionDistance" to inset("cornerRadiusTransitionDistance"),

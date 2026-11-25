@@ -113,11 +113,11 @@ export type DetentConfig = Readonly<{
      */
     insets?: DetentInsets;
     /**
-     * Space at the top of the visible card reserved for regular children.
-     * Clips the bottom-anchored slot in layout units without resizing its content.
+     * Distance in layout units from the top of the card to the upper edge of
+     * the visible and interactive area of bottom-anchored content.
      * Interpolates between open detents and defaults to zero.
      */
-    bottomAnchoredContentTopInset?: number;
+    contentClipTopInset?: number;
     /**
      * Overrides all four surface corner radii at this detent. Omit to inherit
      * the individual radii from `surfaceStyle`. Ignored at a closed detent.
@@ -159,7 +159,7 @@ type NormalizedDetent = Readonly<{
     /** The sheet's `placement` as a physical bias. The same on every detent. */
     placementBias: number;
     scrimOpacity: number;
-    bottomAnchoredContentTopInset: number;
+    contentClipTopInset: number;
     /** -1 inherits the surface radii; 0 is an explicit square corner. */
     cornerRadius: number;
     /** 0 blends over the entire interval. */
