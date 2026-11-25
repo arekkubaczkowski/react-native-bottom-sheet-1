@@ -365,6 +365,17 @@ export type DetentConfig = Readonly<{
    * Interpolates between open detents and defaults to zero.
    */
   bottomAnchoredContentTopInset?: number;
+  /**
+   * Overrides all four surface corner radii at this detent. Omit to inherit
+   * the individual radii from `surfaceStyle`. Ignored at a closed detent.
+   */
+  cornerRadius?: number;
+  /**
+   * A positive distance, in layout units below this detent, over which its
+   * corners blend from the previous open detent. Omit to blend over the whole
+   * interval. New radii follow the same curve as the sheet surface.
+   */
+  cornerRadiusTransitionDistance?: number;
 }>;
 
 /** A modal sheet’s detent with its options. */
@@ -401,6 +412,10 @@ type NormalizedDetent = Readonly<{
   placementBias: number;
   scrimOpacity: number;
   bottomAnchoredContentTopInset: number;
+  /** -1 inherits the surface radii; 0 is an explicit square corner. */
+  cornerRadius: number;
+  /** 0 blends over the entire interval. */
+  cornerRadiusTransitionDistance: number;
 }>;
 
 /** The sheet-wide horizontal layout, carried on every native detent. */
@@ -543,6 +558,29 @@ const normalizeDetent = (
       'a finite, non-negative number'
     );
   }
+  const radius = isClosed ? undefined : (config.cornerRadius ?? undefined);
+  const distance = isClosed
+    ? undefined
+    : (config.cornerRadiusTransitionDistance ?? undefined);
+  if (radius !== undefined && !isFiniteNonNegative(radius)) {
+    throw invalidDetentOptionError(
+      'cornerRadius',
+      radius,
+      index,
+      'a finite, non-negative number'
+    );
+  }
+  if (
+    distance !== undefined &&
+    (!isFiniteNonNegative(distance) || distance === 0)
+  ) {
+    throw invalidDetentOptionError(
+      'cornerRadiusTransitionDistance',
+      distance,
+      index,
+      'a finite, positive number'
+    );
+  }
   // Only a modal sheet has a scrim, so an inline sheet ignores the option
   // rather than validating it.
   const scrimOpacity =
@@ -564,6 +602,8 @@ const normalizeDetent = (
     ...cardLayout,
     scrimOpacity,
     bottomAnchoredContentTopInset: anchorInset,
+    cornerRadius: radius ?? -1,
+    cornerRadiusTransitionDistance: distance ?? 0,
   };
 };
 

@@ -38,7 +38,7 @@ internal class Detents(
     val hostWidth = state.width.toFloat()
     val isNarrowedByMaxWidth = state.columnWidth(hostWidth) < hostWidth
     state.hasCardGaps = state.hasInsetGaps || isNarrowedByMaxWidth
-    clipContainer.setClipsToCard(state.hasCardGaps)
+    card.updateClipping()
   }
 
   fun setDetents(raw: List<Map<String, Any>>) {
@@ -114,6 +114,19 @@ internal class Detents(
       }
     val anchorInsetsChanged = card.setAnchorInsets(anchorInsets)
     refreshDetentsFromLayout()
+    val cornerStyles =
+      entries.map {
+        DetentCornerRadius(
+          radius =
+            (it["cornerRadius"] as? Number)
+              ?.toFloat()
+              ?.takeIf { radius -> radius >= 0f }
+              ?.times(state.density),
+          distance =
+            ((it["cornerRadiusTransitionDistance"] as? Number)?.toFloat() ?: 0f) * state.density,
+        )
+      }
+    card.setDetentCornerRadii(cornerStyles.takeIf { styles -> styles.any { it.radius != null } })
     if (anchorInsetsChanged) card.updateCardGeometry()
     // The re-resolved detents can change the card's shape at its current position.
     contentRegion.recomputeNativeGeometry()

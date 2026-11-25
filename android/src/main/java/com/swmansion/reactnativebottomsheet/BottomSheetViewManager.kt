@@ -124,6 +124,9 @@ class BottomSheetViewManager :
           "insetBottom" to inset("insetBottom"),
           "widestCard" to (map.hasKey("widestCard") && map.getBoolean("widestCard")),
           "bottomAnchoredContentTopInset" to inset("bottomAnchoredContentTopInset"),
+          "cornerRadius" to
+            (if (map.hasKey("cornerRadius")) map.getDouble("cornerRadius") else -1.0),
+          "cornerRadiusTransitionDistance" to inset("cornerRadiusTransitionDistance"),
           "maxWidth" to inset("maxWidth"),
           "placementBias" to
             (if (map.hasKey("placementBias")) map.getDouble("placementBias") else 0.5),

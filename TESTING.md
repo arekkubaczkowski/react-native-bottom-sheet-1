@@ -56,3 +56,15 @@ swiftc -sdk "$sdk" -target arm64-apple-ios16.0-macabi \
   ios/HostingView/*.swift tests/ios/BottomSheetHostSettleTests.swift -o "$test_dir/host-test"
 "$test_dir/host-test"
 ```
+
+## Swift corner geometry tests
+
+The geometry and layer-selection tests run with the Swift toolchain on macOS
+without launching an app or simulator.
+
+```sh
+test_dir=$(mktemp -d)
+swiftc ios/HostingView/Types.swift ios/HostingView/DetentCornerRadii.swift \
+  tests/ios/DetentCornerRadiiTests.swift -o "$test_dir/detent-corners-tests"
+"$test_dir/detent-corners-tests"
+```

@@ -1,0 +1,1 @@
+{"version":3,"names":["isLayoutRTL","document","getComputedStyle","documentElement","direction"],"sourceRoot":"../../src","sources":["layoutDirection.web.ts"],"mappings":";;AAAA;;AAEA;AACA;AACA;AACA;AACA;AACA,OAAO,MAAMA,WAAW,GAAGA,CAAA,KACzB,OAAOC,QAAQ,KAAK,WAAW,IAC/BC,gBAAgB,CAACD,QAAQ,CAACE,eAAe,CAAC,CAACC,SAAS,KAAK,KAAK","ignoreList":[]}

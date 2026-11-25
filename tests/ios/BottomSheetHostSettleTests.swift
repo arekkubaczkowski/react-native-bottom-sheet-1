@@ -75,7 +75,34 @@ struct BottomSheetHostSettleTests {
       precondition(anchor.minY == 104 - 48 * translations[index] / 400 && anchor.maxY == bottom)
     }
 
+    host.setSurfaceCornerRadii([32, 32, 32, 32])
+    host.detentCornerRadii = [
+      DetentCornerRadius(radius: nil, distance: 0),
+      DetentCornerRadius(radius: 0, distance: 50),
+      DetentCornerRadius(radius: nil, distance: 0),
+    ]
+    host.updateCardShape(refreshSettle: true)
+    guard
+      let corners = host.clipContainer.layer.animation(forKey: BottomSheetHostingView.cardCornerRadiusAnimationKey)
+      as? CAKeyframeAnimation,
+      let updatedSlot = slot.layer.animation(forKey: BottomSheetHostingView.cardContentAnimationKey)
+      as? CAKeyframeAnimation,
+      let updatedAnchors = host.bottomAnchorViewport.layer.animation(forKey: BottomSheetHostingView.cardBoundsAnimationKey)
+      as? CAKeyframeAnimation,
+      let cornerValues = corners.values as? [NSNumber]
+    else { fatalError("Missing corner, slot or anchor clip keyframes") }
+    for track in [corners, updatedSlot, updatedAnchors] {
+      precondition(track.beginTime == spring.beginTime && track.keyTimes == spring.keyTimes)
+    }
+    precondition(cornerValues.count == translations.count)
+    precondition(zip(cornerValues.map(\.doubleValue), [0, 6.4, 19.2, 32]).allSatisfy {
+      abs($0 - $1) < 0.01
+    })
+    precondition(updatedAnchors.values as? [NSValue] == anchors)
+
     host.removeSettleAnimations()
+    host.detentCornerRadii = nil
+    host.setSurfaceCornerRadii([0, 0, 0, 0])
     host.setSheetTranslation(150)
     precondition(slot.layer.animation(forKey: BottomSheetHostingView.cardContentAnimationKey) == nil)
     precondition(slot.convert(slot.bounds, to: host).maxY == 800)
