@@ -49,18 +49,17 @@ const normalize = (detents: Parameters<typeof normalizeDetents>[0]) =>
   );
 
 describe('normalizeDetents', () => {
-  test('serializes the native anchor clip at open detents', () => {
+  test('serializes the content clip inset at open detents and defaults to zero', () => {
     const detents = normalize([
-      { value: 0, bottomAnchoredContentTopInset: 999 },
-      { value: '50%', bottomAnchoredContentTopInset: 56 },
-      { value: '100%', bottomAnchoredContentTopInset: 104 },
+      { value: 0, contentClipTopInset: 999 },
+      '25%',
+      { value: '50%', contentClipTopInset: 56 },
+      { value: '100%', contentClipTopInset: 104 },
     ]);
-    expect(detents.map((d) => d.bottomAnchoredContentTopInset)).toEqual([
-      0, 56, 104,
-    ]);
+    expect(detents.map((d) => d.contentClipTopInset)).toEqual([0, 0, 56, 104]);
     expect(() =>
-      normalize([{ value: '50%', bottomAnchoredContentTopInset: -1 }])
-    ).toThrow('bottomAnchoredContentTopInset');
+      normalize([{ value: '50%', contentClipTopInset: -1 }])
+    ).toThrow('contentClipTopInset');
   });
 
   test('carries maxWidth and placement on every detent, the closed one too', () => {

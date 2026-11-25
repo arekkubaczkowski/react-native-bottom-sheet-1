@@ -38,9 +38,9 @@ class BottomSheetHostViewAnchorTest {
       val detents =
         listOf(
           mapOf("value" to 0.0),
-          mapOf("value" to 200.0 / density, "bottomAnchoredContentTopInset" to 40.0 / density),
-          mapOf("value" to 400.0 / density, "bottomAnchoredContentTopInset" to 12.0 / density),
-          mapOf("value" to 400.0 / density, "bottomAnchoredContentTopInset" to 80.0 / density),
+          mapOf("value" to 200.0 / density, "contentClipTopInset" to 40.0 / density),
+          mapOf("value" to 400.0 / density, "contentClipTopInset" to 12.0 / density),
+          mapOf("value" to 400.0 / density, "contentClipTopInset" to 80.0 / density),
         )
       host.setDetents(detents)
       val wrapper = ReactViewGroup(activity)
@@ -85,7 +85,7 @@ class BottomSheetHostViewAnchorTest {
       assertEquals(400f, viewport.top + content.y + content.height, 0.01f)
 
       host.setDetents(
-        detents.dropLast(1) + (detents.last() + ("bottomAnchoredContentTopInset" to 64.0 / density))
+        detents.dropLast(1) + (detents.last() + ("contentClipTopInset" to 64.0 / density))
       )
       assertEquals(64, viewport.top)
       assertEquals(400, viewport.bottom)

@@ -360,11 +360,11 @@ export type DetentConfig = Readonly<{
    */
   insets?: DetentInsets;
   /**
-   * Space at the top of the visible card reserved for regular children.
-   * Clips the bottom-anchored slot in layout units without resizing its content.
+   * Distance in layout units from the top of the card to the upper edge of
+   * the visible and interactive area of bottom-anchored content.
    * Interpolates between open detents and defaults to zero.
    */
-  bottomAnchoredContentTopInset?: number;
+  contentClipTopInset?: number;
 }>;
 
 /** A modal sheet’s detent with its options. */
@@ -400,7 +400,7 @@ type NormalizedDetent = Readonly<{
   /** The sheet's `placement` as a physical bias. The same on every detent. */
   placementBias: number;
   scrimOpacity: number;
-  bottomAnchoredContentTopInset: number;
+  contentClipTopInset: number;
 }>;
 
 /** The sheet-wide horizontal layout, carried on every native detent. */
@@ -532,12 +532,10 @@ const normalizeDetent = (
   const { kind, value } = parseDetentValue(config.value, index);
   const isClosed = isNormalizedDetentClosed({ kind, value });
   const insets = resolveDetentInsets(config.insets, index, isRTL);
-  const anchorInset = isClosed
-    ? 0
-    : (config.bottomAnchoredContentTopInset ?? 0);
+  const anchorInset = isClosed ? 0 : (config.contentClipTopInset ?? 0);
   if (!isFiniteNonNegative(anchorInset)) {
     throw invalidDetentOptionError(
-      'bottomAnchoredContentTopInset',
+      'contentClipTopInset',
       anchorInset,
       index,
       'a finite, non-negative number'
@@ -563,7 +561,7 @@ const normalizeDetent = (
     widestCard: false,
     ...cardLayout,
     scrimOpacity,
-    bottomAnchoredContentTopInset: anchorInset,
+    contentClipTopInset: anchorInset,
   };
 };
 

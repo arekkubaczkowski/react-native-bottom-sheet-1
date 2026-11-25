@@ -109,9 +109,7 @@ internal class Detents(
     }
     contentRegion.recomputeNativeGeometry()
     val anchorInsets =
-      entries.map {
-        ((it["bottomAnchoredContentTopInset"] as? Number)?.toFloat() ?: 0f) * state.density
-      }
+      entries.map { ((it["contentClipTopInset"] as? Number)?.toFloat() ?: 0f) * state.density }
     val anchorInsetsChanged = card.setAnchorInsets(anchorInsets)
     refreshDetentsFromLayout()
     if (anchorInsetsChanged) card.updateCardGeometry()

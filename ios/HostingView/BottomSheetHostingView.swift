@@ -568,7 +568,7 @@ public final class BottomSheetHostingView: UIView {
       isContentRegionChangePending = true
     }
     let anchorInsets = entries.map {
-      CGFloat(truncating: $0["bottomAnchoredContentTopInset"] as? NSNumber ?? 0)
+      CGFloat(truncating: $0["contentClipTopInset"] as? NSNumber ?? 0)
     }
     let resolvedAnchorInsets = anchorInsets.contains { $0 > 0 } ? anchorInsets : []
     let anchorInsetsChanged = bottomAnchorTopInsets != resolvedAnchorInsets

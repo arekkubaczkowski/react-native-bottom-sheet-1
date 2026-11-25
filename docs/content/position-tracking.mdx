@@ -118,23 +118,31 @@ it, so a list inside keeps the same viewport size during motion. The sheet lays
 out its regular children above the slot in the drawing order and uses those
 children to measure a `'content'` detent.
 
-If regular children contain a header, set `bottomAnchoredContentTopInset` on
-each open detent to reserve its height. The native clip interpolates between
-detents on the same clock as the card. The anchored content keeps its layout
-height. The inset defaults to zero. When detents resolve to the same height,
-the last one at that height supplies the inset in both directions.
+### Setting the top edge of the visible content
+
+Set `contentClipTopInset` on an open detent to move the top edge of the
+visible and interactive area of `bottomAnchoredContent` down from the card's top.
+The slot keeps its layout size and its bottom anchor. The native host
+interpolates the boundary between detents in step with the card animation.
+The default is zero. When detents resolve to the same height, the last one
+at that height supplies the inset in both directions.
+
+Use this when another part of the sheet occupies the same area as content
+whose layout needs to remain stable. An opaque overlay covers the content
+and replaces any translucency or blur in that area with a solid fill. The
+clip defines a shared boundary for drawing and touch input independently
+of the surface material.
 
 ```tsx
 <BottomSheet
-  detents={[0, { value: '50%', bottomAnchoredContentTopInset: 48 },
-    { value: '100%', bottomAnchoredContentTopInset: 64 }]}
+  detents={[
+    0,
+    { value: '50%', contentClipTopInset: 48 },
+    { value: '100%', contentClipTopInset: 64 },
+  ]}
   index={index}
   onIndexChange={setIndex}
-  bottomAnchoredContent={
-    <View style={{ flex: 1, justifyContent: 'flex-end' }}>
-      <Composer />
-    </View>
-  }
+  bottomAnchoredContent={<Conversation />}
 >
   <Header />
 </BottomSheet>

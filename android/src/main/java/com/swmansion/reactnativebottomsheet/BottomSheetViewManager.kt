@@ -123,7 +123,7 @@ class BottomSheetViewManager :
           "insetRight" to inset("insetRight"),
           "insetBottom" to inset("insetBottom"),
           "widestCard" to (map.hasKey("widestCard") && map.getBoolean("widestCard")),
-          "bottomAnchoredContentTopInset" to inset("bottomAnchoredContentTopInset"),
+          "contentClipTopInset" to inset("contentClipTopInset"),
           "maxWidth" to inset("maxWidth"),
           "placementBias" to
             (if (map.hasKey("placementBias")) map.getDouble("placementBias") else 0.5),
